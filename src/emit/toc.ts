@@ -20,16 +20,16 @@ const slug = (s: string) =>
 export function headingIndex(blocks: readonly RenderedBlock[]): { entries: TocEntry[]; ids: WeakMap<object, string> } {
 	const entries: TocEntry[] = [];
 	const ids = new WeakMap<object, string>();
-	const seen = new Map<string, number>();
+	const used = new Set<string>();
 	for (const block of blocks) {
 		if (block.type !== "prose") continue;
 		for (const node of block.body) {
 			if (node.type !== "heading" || node.depth > 3) continue;
 			const label = text(node);
 			const base = slug(label);
-			const n = seen.get(base) ?? 0;
-			seen.set(base, n + 1);
-			const id = n ? `${base}-${n + 1}` : base;
+			let id = base;
+			for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
+			used.add(id);
 			ids.set(node, id);
 			entries.push({ id, text: label, level: node.depth === 1 ? 2 : (node.depth as 2 | 3) });
 		}
