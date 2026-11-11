@@ -15,10 +15,10 @@ const stripPositions = (value: unknown): unknown =>
 	JSON.parse(JSON.stringify(value, (key, v) => (key === "position" && v?.start && "offset" in v.start ? undefined : v)));
 
 describe("valid report", () => {
-	it("parses every block type and anchor form", () => {
+	it("parses every block type and anchor form", async () => {
 		const result = parseReport(readFileSync("fixtures/format/valid.md", "utf8"));
 		if (!result.ok) throw new Error(JSON.stringify(result.diagnostics));
-		expect(stripPositions(result.value)).toMatchFileSnapshot("./__snapshots__/valid.json");
+		await expect(stripPositions(result.value)).toMatchFileSnapshot("./__snapshots__/valid.json");
 	});
 
 	it("parses every registry example", () => {
