@@ -9,7 +9,6 @@ export type BlockKind = Exclude<BlockType, "prose">;
 type Fields<K extends BlockKind> = K extends unknown ? Omit<Extract<Block, { type: K }>, "type" | "position"> : never;
 
 export type BodyContext = {
-	/* Maps a 1-based line within the body to its line in the report. */
 	lineAt(line: number): number;
 	column: number;
 };
@@ -19,9 +18,7 @@ export type BlockEntry<K extends BlockKind, P extends z.ZodObject, B> = {
 	parseBody(body: string, ctx: BodyContext): Result<B>;
 	assemble(props: z.output<P>, body: B): Fields<K>;
 	summary: string;
-	/* What goes between the fences. */
 	body: string;
-	/* Schema of a structured (YAML) body, when the body has keys. */
 	bodySchema?: z.ZodObject;
 	example: string;
 };

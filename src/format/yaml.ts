@@ -7,9 +7,6 @@ export type YamlRead = {
 	lineOf(path: PropertyKey[]): number;
 };
 
-/*
- * `firstLine` is the report line of the first line of `text`.
- */
 export function readYaml(text: string, firstLine: number, label: string): YamlRead {
 	const lines = new LineCounter();
 	const doc = parseDocument(text, { lineCounter: lines });

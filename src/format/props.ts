@@ -2,9 +2,6 @@ import type { Problem } from "./issues.js";
 
 const PAIR = /\s*([A-Za-z][\w-]*)=(?:"([^"]*)"|(\S+))/y;
 
-/*
- * Splits an info string like `path=src/a.ts note="two words"` into key/value pairs.
- */
 export function tokenizeProps(meta: string, kind: string): { props: Record<string, string>; problems: Problem[] } {
 	const props: Record<string, string> = {};
 	const problems: Problem[] = [];

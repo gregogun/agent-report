@@ -26,10 +26,9 @@ function countChanges(patch: string): { added: number; removed: number } {
 	return { added, removed };
 }
 
-/*
- * The library prepends a 16 KB icon sprite that only the file header references. With disableFileHeader nothing
- * uses it, and a <use> cannot cross a shadow root anyway, so it is dropped unless a reference remains.
- */
+/* The library prepends a 16 KB icon sprite that only the file header references. With disableFileHeader nothing
+   uses it, and a <use> cannot cross a shadow root anyway, so it is dropped unless a reference remains.
+*/
 const dropUnusedSprite = (html: string) => (html.includes("<use") ? html : html.replace(/^<svg data-icon-sprite[\s\S]*?<\/svg>/, ""));
 
 async function renderDiff(diff: ResolvedDiff): Promise<RenderedDiff> {

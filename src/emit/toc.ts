@@ -9,7 +9,6 @@ const slug = (s: string) =>
 		.replace(/[^\p{L}\p{N}]+/gu, "-")
 		.replace(/^-|-$/g, "") || "section";
 
-/* Prose headings render as h2 and h3 at most (source depth 1 and 2 both become h2), and those make up the table of contents. */
 export function headingIndex(blocks: readonly RenderedBlock[]): { entries: TocEntry[]; ids: WeakMap<object, string> } {
 	const entries: TocEntry[] = [];
 	const ids = new WeakMap<object, string>();

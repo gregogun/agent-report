@@ -11,9 +11,6 @@ export function parseReportTree(source: string) {
 	return reportProcessor.parse(source);
 }
 
-/*
- * Positions inside the returned nodes are relative to `text`, not the report.
- */
 export function parseMarkdown(text: string): Markdown {
 	return snippetProcessor.parse(text).children;
 }

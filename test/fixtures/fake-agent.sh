@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Stand-in for `claude -p` in the head-to-head test. Reads no prompt and calls no model.
 cat > /dev/null
 if [ "$H2H_ARM" = explain-diff-html ]; then
   echo '<html><body>fake explanation</body></html>' > "$H2H_ARTIFACT"

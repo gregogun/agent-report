@@ -58,9 +58,6 @@ function allowedKeys(schema: z.ZodType | undefined): string {
 		.join(", ");
 }
 
-/*
- * Turns zod issues into messages written for an agent that must fix its own report.
- */
 export function problemsFromZod(error: z.ZodError, input: unknown, schema: z.ZodType, style: Style): Problem[] {
 	const problems: Problem[] = [];
 	for (const issue of error.issues) {

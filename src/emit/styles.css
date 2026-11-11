@@ -1,8 +1,3 @@
-/*
- * One token set drives every surface, including the @pierre/diffs shadow roots
- * (see "Diffs" below). Three families: serif for everything read, sans for
- * labels and chrome, mono for code.
- */
 :root {
 	color-scheme: light dark;
 
@@ -66,7 +61,6 @@ body {
 	overflow-wrap: break-word;
 }
 
-/* Layout: contents rail, then one column. Prose keeps a reading measure, blocks fill the column. */
 
 .page {
 	display: grid;
@@ -120,7 +114,6 @@ h1 {
 	color: var(--muted);
 }
 
-/* Contents */
 
 .toc {
 	font: var(--step--1) / 1.4 var(--font-ui);
@@ -192,7 +185,6 @@ h1 {
 	}
 }
 
-/* Prose */
 
 main > * {
 	margin-block: 0 1.75rem;
@@ -310,7 +302,6 @@ hr {
 	margin: 2.5rem 0;
 }
 
-/* Callouts */
 
 .callout {
 	--kind: var(--c-note);
@@ -339,7 +330,6 @@ hr {
 	color: var(--kind);
 }
 
-/* Decision */
 
 .decision {
 	padding: 1.35rem 1.5rem 0.6rem;
@@ -382,7 +372,6 @@ hr {
 	margin-bottom: 0.05rem;
 }
 
-/* Review checklist */
 
 .checklist {
 	padding: 1.25rem 1.5rem 0.5rem;
@@ -428,7 +417,6 @@ hr {
 	margin: 0;
 }
 
-/* Diff block: one card, file header on top, code below. */
 
 .diff {
 	border: 1px solid var(--rule);
@@ -509,10 +497,6 @@ hr {
 .diff-del { color: var(--del); font-weight: 600; }
 .diff-notes { color: var(--voice); font-weight: 600; }
 
-/*
- * Diffs. @pierre/diffs renders into a shadow root and reads these custom
- * properties, so the code surface follows the page tokens in both schemes.
- */
 
 diffs-container {
 	display: block;
@@ -527,7 +511,6 @@ diffs-container {
 	--diffs-fg-number-override: var(--faint);
 }
 
-/* Annotations: the author's voice, set in text type, hung under the line they explain. */
 
 .diff-body [slot] {
 	display: block;
