@@ -1,0 +1,302 @@
+{
+  "blocks": [
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "A plain diff of the small file.",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 6,
+      },
+      "type": "prose",
+    },
+    {
+      "annotations": [],
+      "patch": "diff --git a/b.ts b/b.ts
+index fa2da6e..a4a2a68 100644
+--- a/b.ts
++++ b/b.ts
+@@ -2,7 +2,7 @@ line 1
+ line 2
+ line 3
+ line 4
+-line 5
++line five changed
+ line 6
+ line 7
+ line 8
+",
+      "path": "b.ts",
+      "position": {
+        "column": 1,
+        "line": 8,
+      },
+      "range": "HEAD~1..HEAD",
+      "type": "diff",
+    },
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Two hunks of the big file, with every anchor form.",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 11,
+      },
+      "type": "prose",
+    },
+    {
+      "annotations": [
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A line anchor on the new side.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 21,
+          "lines": {
+            "end": 21,
+            "start": 21,
+          },
+          "position": {
+            "column": 1,
+            "line": 14,
+          },
+          "side": "additions",
+        },
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A line anchor on the old side.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 38,
+          "lines": {
+            "end": 38,
+            "start": 38,
+          },
+          "position": {
+            "column": 1,
+            "line": 15,
+          },
+          "side": "deletions",
+        },
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A range anchor, attached at the end.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 21,
+          "lines": {
+            "end": 21,
+            "start": 20,
+          },
+          "position": {
+            "column": 1,
+            "line": 16,
+          },
+          "side": "additions",
+        },
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A text anchor.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 21,
+          "lines": {
+            "end": 21,
+            "start": 21,
+          },
+          "position": {
+            "column": 1,
+            "line": 17,
+          },
+          "side": "additions",
+        },
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A text anchor on the old side.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 20,
+          "lines": {
+            "end": 20,
+            "start": 20,
+          },
+          "position": {
+            "column": 1,
+            "line": 18,
+          },
+          "side": "deletions",
+        },
+      ],
+      "patch": "diff --git a/a.ts b/a.ts
+index 84032ad..8661cb7 100644
+--- a/a.ts
++++ b/a.ts
+@@ -17,7 +17,8 @@ export const v16 = 16;
+ export const v17 = 17;
+ export const v18 = 18;
+ export const v19 = 19;
+-export const v20 = 20;
++export const twenty = 20;
++export const twentyOne = 21;
+ export const v21 = 21;
+ export const v22 = 22;
+ export const v23 = 23;
+@@ -35,6 +36,5 @@ export const v34 = 34;
+ export const v35 = 35;
+ export const v36 = 36;
+ export const v37 = 37;
+-export const v38 = 38;
+ export const v39 = 39;
+ export const v40 = 40;
+",
+      "path": "a.ts",
+      "position": {
+        "column": 1,
+        "line": 13,
+      },
+      "range": "HEAD~1..HEAD",
+      "type": "diff",
+    },
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Only the first hunk.",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 21,
+      },
+      "type": "prose",
+    },
+    {
+      "annotations": [
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The renamed constant.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 3,
+          "lines": {
+            "end": 3,
+            "start": 3,
+          },
+          "position": {
+            "column": 1,
+            "line": 24,
+          },
+          "side": "additions",
+        },
+        {
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "What it used to be.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "lineNumber": 3,
+          "lines": {
+            "end": 3,
+            "start": 3,
+          },
+          "position": {
+            "column": 1,
+            "line": 25,
+          },
+          "side": "deletions",
+        },
+      ],
+      "patch": "diff --git a/a.ts b/a.ts
+index 84032ad..8661cb7 100644
+--- a/a.ts
++++ b/a.ts
+@@ -1,6 +1,6 @@
+ export const v1 = 1;
+ export const v2 = 2;
+-export const v3 = 3;
++export const renamed3 = "three";
+ export const v4 = 4;
+ export const v5 = 5;
+ export const v6 = 6;
+",
+      "path": "a.ts",
+      "position": {
+        "column": 1,
+        "line": 23,
+      },
+      "range": "HEAD~1..HEAD",
+      "type": "diff",
+    },
+  ],
+  "title": "Resolve fixture",
+  "version": 1,
+}
