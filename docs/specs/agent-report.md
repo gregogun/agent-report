@@ -104,8 +104,8 @@ Stop if, after step 3, explain-diff is still the better choice for most diffs. I
 - Whether one copy of the `@pierre/diffs` CSS and icon sprite can serve every diff block. Each block carries about 48 KB of fixed overhead otherwise.
 - The exact text of the annotation anchor syntax inside a `diff` block body. The head-to-head retry count decides between candidate spellings.
 - The name of the command that prints the format reference.
-- The exact field names of the `diagram` body, and whether boxes also take shapes such as a cylinder for a store. Retry counts from real reports decide.
-- The breakpoint and narrow width for the phone render of a diagram.
+- Decided: the `diagram` body takes `boxes` (`id`, `label`, `path`, optional `section`) and optional `arrows` (`from`, `to`, `kind` of `direct` or `loose`). The fence takes an optional `ref`. The user kept these names for now. Boxes are all rectangles, and shapes such as a cylinder for a store stay open until a real report needs one.
+- Decided: the phone render switches at 40rem, the report's existing phone breakpoint, and the narrow copy is laid out with a maximum width of 300.
 
 ## Testing
 
