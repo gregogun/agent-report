@@ -1,209 +1,610 @@
+/*
+ * One token set drives every surface, including the @pierre/diffs shadow roots
+ * (see "Diffs" below). Three families: serif for everything read, sans for
+ * labels and chrome, mono for code.
+ */
 :root {
 	color-scheme: light dark;
-	--bg: light-dark(#fbfbfa, #151517);
-	--fg: light-dark(#1c1c1e, #e8e8ea);
-	--muted: light-dark(#6b6b70, #9a9aa0);
-	--rule: light-dark(#e3e3e0, #2c2c30);
-	--surface: light-dark(#f2f2ef, #1e1e21);
-	--accent: light-dark(#2457d6, #7da2ff);
-	--note: light-dark(#8a5a00, #f0b84a);
-	--note-bg: light-dark(#fff7e3, #2a2414);
-	--warn: light-dark(#b3261e, #ff8a80);
-	--font-text: ui-serif, Georgia, "Times New Roman", serif;
-	--font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
-	--font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-	--measure: 44rem;
-	--wide: 64rem;
-	--radius: 8px;
+
+	--bg: light-dark(#f8f6f0, #131315);
+	--card: light-dark(#fffdf9, #1a1a1d);
+	--fg: light-dark(#211f1b, #e9e6df);
+	--muted: light-dark(#6d675c, #a09b91);
+	--faint: light-dark(#9a948a, #6f6b64);
+	--rule: light-dark(#e4dfd2, #2b2b2f);
+	--surface: light-dark(#f1eee5, #212125);
+	--link: light-dark(#1f4fb4, #86a8ff);
+
+	--voice: light-dark(#3b43d6, #9ba3ff);
+	--voice-tint: light-dark(#f0f1ff, #20213a);
+	--add: light-dark(#17803f, #52cf84);
+	--del: light-dark(#c4302b, #ff7b72);
+
+	--c-note: light-dark(#1b7a8c, #5fc4d6);
+	--c-concept: light-dark(#7a3fc0, #bf9bf2);
+	--c-edge-case: light-dark(#a86a00, #f0b955);
+	--c-warning: light-dark(#c4302b, #ff8a80);
+
+	--font-text: "Iowan Old Style", Charter, "Sitka Text", "Palatino Linotype", Palatino, Georgia, serif;
+	--font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+	--font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+	--step--1: 0.8125rem;
+	--step-0: 1.125rem;
+	--step-1: 1.3rem;
+	--step-2: 1.75rem;
+	--step-3: 2.75rem;
+
+	--measure: 38rem;
+	--column: 52rem;
+	--radius: 10px;
+	--shadow: 0 1px 2px light-dark(rgb(40 30 10 / 0.06), rgb(0 0 0 / 0.4)), 0 6px 18px -8px light-dark(rgb(40 30 10 / 0.14), rgb(0 0 0 / 0.5));
 }
 
 * {
 	box-sizing: border-box;
 }
 
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
+}
+
 body {
 	margin: 0;
 	background: var(--bg);
 	color: var(--fg);
-	font: 1.0625rem/1.65 var(--font-text);
+	font: var(--step-0) / 1.65 var(--font-text);
+	font-optical-sizing: auto;
+	text-rendering: optimizeLegibility;
+	overflow-wrap: break-word;
 }
 
-main {
-	max-width: var(--wide);
+/* Layout: contents rail, then one column. Prose keeps a reading measure, blocks fill the column. */
+
+.page {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	max-width: calc(var(--column) + 15rem + 4rem);
 	margin: 0 auto;
-	padding: 3rem 1rem 6rem;
+	padding: 3.5rem 1.25rem 7rem;
 }
 
-main > :not(.diff) {
-	max-width: var(--measure);
-	margin-inline: auto;
+@media (min-width: 68rem) {
+	.page {
+		grid-template-columns: 13rem minmax(0, var(--column));
+		column-gap: 2rem;
+		padding-inline: 2rem;
+	}
+	.masthead, main {
+		grid-column: 2;
+	}
+	.page > nav {
+		grid-column: 1;
+		grid-row: 1 / span 2;
+	}
+}
+
+.masthead {
+	padding-bottom: 2rem;
+	margin-bottom: 1rem;
+	border-bottom: 1px solid var(--rule);
+}
+
+.eyebrow {
+	margin: 0 0 1rem;
+	font: 600 0.72rem / 1 var(--font-ui);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--voice);
 }
 
 h1 {
-	font: 700 2.25rem/1.15 var(--font-ui);
-	letter-spacing: -0.02em;
-	margin: 0 auto 2rem;
+	margin: 0;
+	max-width: 20ch;
+	font: 700 var(--step-3) / 1.08 var(--font-text);
+	letter-spacing: -0.025em;
+	text-wrap: balance;
+}
+
+.meta {
+	margin: 1.25rem 0 0;
+	font: var(--step--1) / 1 var(--font-ui);
+	letter-spacing: 0.01em;
+	color: var(--muted);
+}
+
+/* Contents */
+
+.toc {
+	font: var(--step--1) / 1.4 var(--font-ui);
+	margin: 0 0 1.5rem;
+	padding: 0.25rem 1rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--card);
+}
+
+.toc summary {
+	cursor: pointer;
+	padding: 0.5rem 0;
+	font-weight: 600;
+	font-size: 0.72rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.toc ol {
+	list-style: none;
+	margin: 0 0 0.5rem;
+	padding: 0;
+}
+
+.toc a {
+	display: block;
+	padding: 0.3rem 0 0.3rem 0.75rem;
+	border-left: 2px solid transparent;
+	color: var(--muted);
+	text-decoration: none;
+}
+
+.toc .toc-3 a {
+	padding-left: 1.5rem;
+}
+
+.toc a:hover {
+	color: var(--fg);
+}
+
+.toc a[aria-current] {
+	color: var(--fg);
+	border-left-color: var(--voice);
+	font-weight: 600;
+}
+
+@media (min-width: 68rem) {
+	.page > nav {
+		align-self: start;
+		position: sticky;
+		top: 2rem;
+		padding-top: 0.35rem;
+	}
+	.toc {
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+	}
+	.toc summary {
+		pointer-events: none;
+		list-style: none;
+		padding-top: 0;
+	}
+	.toc summary::-webkit-details-marker {
+		display: none;
+	}
+}
+
+/* Prose */
+
+main > * {
+	margin-block: 0 1.75rem;
+}
+
+.prose > * {
+	max-width: var(--measure);
+}
+
+p, ul, ol, blockquote, table, pre {
+	margin: 0 0 1.1rem;
 }
 
 h2, h3, h4, h5, h6 {
-	font-family: var(--font-ui);
-	line-height: 1.25;
+	font-family: var(--font-text);
+	line-height: 1.2;
+	letter-spacing: -0.015em;
+	text-wrap: balance;
+	scroll-margin-top: 1.5rem;
 }
 
-h2 { font-size: 1.5rem; margin: 2.5rem 0 0.75rem; }
-h3 { font-size: 1.2rem; margin: 2rem 0 0.5rem; }
-h4 { font-size: 1rem; margin: 1.25rem 0 0.25rem; }
+h2 {
+	margin: 3.25rem 0 1rem;
+	font-size: var(--step-2);
+	font-weight: 700;
+}
 
-p, ul, ol, blockquote, table, pre {
-	margin: 0 0 1rem;
+h3 {
+	margin: 2.25rem 0 0.75rem;
+	font-size: var(--step-1);
+	font-weight: 700;
+}
+
+h4 {
+	margin: 1.5rem 0 0.4rem;
+	font: 600 0.75rem / 1.3 var(--font-ui);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+main > :first-child h2:first-child {
+	margin-top: 1.5rem;
 }
 
 a {
-	color: var(--accent);
+	color: var(--link);
+	text-underline-offset: 0.18em;
+	text-decoration-thickness: 1px;
+}
+
+a:hover {
+	text-decoration-thickness: 2px;
+}
+
+li {
+	margin-bottom: 0.35rem;
+}
+
+li > p:last-child {
+	margin-bottom: 0;
 }
 
 code {
-	font: 0.875em var(--font-mono);
+	font: 0.84em var(--font-mono);
 	background: var(--surface);
-	padding: 0.1em 0.35em;
+	padding: 0.12em 0.4em;
 	border-radius: 4px;
 }
 
 pre {
 	background: var(--surface);
-	padding: 1rem;
+	padding: 1rem 1.25rem;
 	border-radius: var(--radius);
 	overflow-x: auto;
 	white-space: pre;
+	font-size: var(--step--1);
+	line-height: 1.6;
 }
 
 pre code {
 	background: none;
 	padding: 0;
+	font-size: inherit;
 }
 
 blockquote {
 	border-left: 3px solid var(--rule);
-	padding-left: 1rem;
+	padding-left: 1.1rem;
 	color: var(--muted);
+	font-style: italic;
 }
 
 table {
+	display: block;
+	overflow-x: auto;
 	border-collapse: collapse;
-	font-size: 0.95rem;
+	font: 0.9rem / 1.45 var(--font-ui);
 }
 
 th, td {
 	border-bottom: 1px solid var(--rule);
-	padding: 0.4rem 0.75rem;
+	padding: 0.45rem 0.9rem 0.45rem 0;
 	text-align: left;
+}
+
+th {
+	font-weight: 600;
+	color: var(--muted);
 }
 
 hr {
 	border: 0;
 	border-top: 1px solid var(--rule);
-	margin: 2rem 0;
+	margin: 2.5rem 0;
 }
 
-.diff {
-	margin: 2rem 0;
+/* Callouts */
+
+.callout {
+	--kind: var(--c-note);
+	padding: 1rem 1.35rem 0.4rem;
+	border-left: 3px solid var(--kind);
+	border-radius: 2px var(--radius) var(--radius) 2px;
+	background: color-mix(in oklab, var(--kind) 7%, var(--bg));
+	font-size: 1.02rem;
+	line-height: 1.6;
 }
 
-.diff figcaption {
-	display: flex;
-	justify-content: space-between;
-	gap: 1rem;
-	font: 0.8125rem var(--font-ui);
-	color: var(--muted);
-	padding: 0 0.25rem 0.5rem;
-}
+.callout-concept { --kind: var(--c-concept); }
+.callout-edge-case { --kind: var(--c-edge-case); }
+.callout-warning { --kind: var(--c-warning); }
 
-.diff figcaption code {
-	background: none;
-	padding: 0;
-	color: var(--fg);
-}
-
-diffs-container {
-	display: block;
-	border: 1px solid var(--rule);
-	border-radius: var(--radius);
-	overflow: hidden;
-	--diffs-font-size: 13px;
-}
-
-.note {
-	margin: 0.5rem 0.75rem;
-	padding: 0.1rem 0.9rem;
-	border-left: 3px solid var(--note);
-	background: var(--note-bg);
-	border-radius: 0 6px 6px 0;
-	font: 0.9rem/1.5 var(--font-ui);
-	white-space: normal;
-	color: var(--fg);
-}
-
-.note p {
-	margin: 0.5rem 0;
-}
-
-.note-range {
-	display: block;
-	margin-top: 0.4rem;
-	font-size: 0.75rem;
-	color: var(--note);
-}
-
-.callout, .decision, .checklist {
-	margin-block: 1.5rem;
-	padding: 0.25rem 1.25rem;
-	border-radius: var(--radius);
-	border: 1px solid var(--rule);
-	background: var(--surface);
-}
-
-.callout-title, .decision-label, .checklist-title {
-	font: 600 0.75rem var(--font-ui);
+.callout-title,
+.decision-label,
+.checklist-title {
+	margin: 0 0 0.5rem;
+	font: 600 0.72rem / 1.2 var(--font-ui);
+	letter-spacing: 0.12em;
 	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--muted);
-	margin: 0.75rem 0 0.25rem;
 }
 
-.callout-note { border-left: 4px solid var(--accent); }
-.callout-concept { border-left: 4px solid var(--note); }
-.callout-edge-case { border-left: 4px solid var(--muted); }
-.callout-warning { border-left: 4px solid var(--warn); }
+.callout-title {
+	color: var(--kind);
+}
+
+/* Decision */
+
+.decision {
+	padding: 1.35rem 1.5rem 0.6rem;
+	border: 1px solid var(--rule);
+	border-top: 3px solid var(--fg);
+	border-radius: 2px 2px var(--radius) var(--radius);
+	background: var(--card);
+}
+
+.decision-label {
+	color: var(--muted);
+}
 
 .decision h3 {
-	margin-top: 0.25rem;
+	margin: 0 0 0.9rem;
+}
+
+.decision-chosen {
+	margin-bottom: 0.5rem;
+	padding: 0.7rem 1rem 0.1rem;
+	border-left: 3px solid var(--add);
+	border-radius: 2px var(--radius) var(--radius) 2px;
+	background: color-mix(in oklab, var(--add) 8%, var(--card));
+	font-weight: 600;
+}
+
+.decision ul {
+	margin-top: 0.4rem;
+	padding-left: 1.1rem;
+	list-style: "\2013\00a0\00a0";
+}
+
+.decision li p {
+	margin-bottom: 0.4rem;
+	color: var(--muted);
+}
+
+.decision li strong {
+	display: block;
+	margin-bottom: 0.05rem;
+}
+
+/* Review checklist */
+
+.checklist {
+	padding: 1.25rem 1.5rem 0.5rem;
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--card);
+}
+
+.checklist-title {
+	color: var(--voice);
 }
 
 .checklist ul {
 	list-style: none;
 	padding: 0;
+	margin: 0;
 }
 
 .checklist li {
 	display: flex;
-	gap: 0.75rem;
+	gap: 0.85rem;
 	align-items: baseline;
+	padding: 0.55rem 0;
+	margin: 0;
+	border-top: 1px solid var(--rule);
+}
+
+.checklist li:first-child {
+	border-top: 0;
+	padding-top: 0;
 }
 
 .checklist .box {
 	flex: none;
-	width: 0.9rem;
-	height: 0.9rem;
-	border: 1.5px solid var(--muted);
-	border-radius: 3px;
-	transform: translateY(0.15rem);
+	width: 1rem;
+	height: 1rem;
+	border: 1.5px solid var(--faint);
+	border-radius: 4px;
+	transform: translateY(0.18rem);
 }
 
 .checklist li p {
-	margin: 0 0 0.5rem;
+	margin: 0;
+}
+
+/* Diff block: one card, file header on top, code below. */
+
+.diff {
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	background: var(--card);
+	box-shadow: var(--shadow);
+	overflow: hidden;
+}
+
+.diff > summary {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.25rem 1.25rem;
+	padding: 0.7rem 1rem 0.7rem 2.25rem;
+	position: relative;
+	list-style: none;
+	cursor: pointer;
+	background: var(--surface);
+	font: var(--step--1) / 1.4 var(--font-ui);
+	user-select: none;
+}
+
+.diff > summary::-webkit-details-marker {
+	display: none;
+}
+
+.diff > summary::before {
+	content: "";
+	position: absolute;
+	left: 1rem;
+	top: 50%;
+	width: 0.4rem;
+	height: 0.4rem;
+	margin-top: -0.3rem;
+	border: solid var(--muted);
+	border-width: 0 1.5px 1.5px 0;
+	transform: rotate(-45deg);
+	transition: transform 0.15s;
+}
+
+.diff[open] > summary::before {
+	transform: rotate(45deg);
+	margin-top: -0.4rem;
+}
+
+.diff[open] > summary {
+	border-bottom: 1px solid var(--rule);
+}
+
+.diff-path {
+	font: 0.85rem var(--font-mono);
+	overflow-wrap: anywhere;
+}
+
+.diff-dir {
+	color: var(--muted);
+}
+
+.diff-file {
+	font-weight: 700;
+}
+
+.diff-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.85rem;
+	color: var(--muted);
+}
+
+.diff-range {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+}
+
+.diff-add { color: var(--add); font-weight: 600; }
+.diff-del { color: var(--del); font-weight: 600; }
+.diff-notes { color: var(--voice); font-weight: 600; }
+
+/*
+ * Diffs. @pierre/diffs renders into a shadow root and reads these custom
+ * properties, so the code surface follows the page tokens in both schemes.
+ */
+
+diffs-container {
+	display: block;
+	--diffs-font-family: var(--font-mono);
+	--diffs-font-size: 13px;
+	--diffs-line-height: 22px;
+	--diffs-light-bg: #fffdf9;
+	--diffs-dark-bg: #1a1a1d;
+	--diffs-addition-color-override: var(--add);
+	--diffs-deletion-color-override: var(--del);
+	--diffs-bg-separator-override: light-dark(#f3f0e7, #212125);
+	--diffs-fg-number-override: var(--faint);
+}
+
+/* Annotations: the author's voice, set in text type, hung under the line they explain. */
+
+.diff-body [slot] {
+	display: block;
+	padding: 0.2rem 1rem 0.9rem 3.25rem;
+	background: var(--card);
+	white-space: normal;
+	font: 0.98rem / 1.55 var(--font-text);
+	color: var(--fg);
+}
+
+.note {
+	position: relative;
+	padding: 0.75rem 1.1rem 0.25rem;
+	border: 1px solid color-mix(in oklab, var(--voice) 28%, var(--rule));
+	border-left: 3px solid var(--voice);
+	border-radius: 2px 8px 8px 2px;
+	background: var(--voice-tint);
+	max-width: 44rem;
+}
+
+.note::before {
+	content: "";
+	position: absolute;
+	top: -6px;
+	left: 1rem;
+	width: 10px;
+	height: 10px;
+	background: var(--voice-tint);
+	border: solid color-mix(in oklab, var(--voice) 28%, var(--rule));
+	border-width: 1px 0 0 1px;
+	transform: rotate(45deg);
+}
+
+.note p {
+	margin: 0 0 0.6rem;
+}
+
+.note .note-label {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	margin: 0 0 0.45rem;
+	font: 600 0.68rem / 1 var(--font-ui);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--voice);
+}
+
+.note-n {
+	display: inline-grid;
+	place-items: center;
+	width: 1.3rem;
+	height: 1.3rem;
+	border-radius: 50%;
+	background: var(--voice);
+	color: var(--bg);
+	font-size: 0.7rem;
+	letter-spacing: 0;
+}
+
+.note code {
+	background: color-mix(in oklab, var(--voice) 10%, transparent);
 }
 
 @media (max-width: 40rem) {
-	h1 { font-size: 1.75rem; }
-	body { font-size: 1rem; }
+	:root {
+		--step-0: 1.0625rem;
+		--step-2: 1.5rem;
+		--step-3: 2rem;
+	}
+	.page {
+		padding: 2rem 1rem 5rem;
+	}
+	.diff-body [slot] {
+		padding: 0.2rem 0.6rem 0.8rem;
+	}
+	.callout, .decision, .checklist {
+		padding-inline: 1rem;
+	}
 }
