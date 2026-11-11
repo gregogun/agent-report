@@ -17,9 +17,11 @@ function annotationHtml(a: ResolvedAnnotation, n: number): string {
 function countChanges(patch: string): { added: number; removed: number } {
 	let added = 0;
 	let removed = 0;
+	let inHunk = false;
 	for (const line of patch.split("\n")) {
-		if (line.startsWith("+") && !line.startsWith("+++")) added++;
-		else if (line.startsWith("-") && !line.startsWith("---")) removed++;
+		if (line.startsWith("@@")) inHunk = true;
+		else if (inHunk && line.startsWith("+")) added++;
+		else if (inHunk && line.startsWith("-")) removed++;
 	}
 	return { added, removed };
 }
