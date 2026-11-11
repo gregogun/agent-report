@@ -73,7 +73,7 @@ export function formatReference(): string {
 		"",
 		"## Frontmatter",
 		"",
-		"The file starts with a `---` YAML block. Both keys are required and no other keys are allowed.",
+		"The file starts with a `---` YAML block. Both keys are required. Other keys are ignored.",
 		"",
 		...propRows(frontmatter, "key"),
 		"",
