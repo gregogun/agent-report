@@ -52,24 +52,16 @@ function parseFence(node: Code, kind: BlockKind, diagnostics: Diagnostic[]): Blo
 	const entry: AnyEntry = registry[kind];
 	const fence = { line: node.position?.start.line ?? 1, column: node.position?.start.column ?? 1 };
 	const at = (message: string, hint?: string): Diagnostic => ({ position: fence, message, ...(hint ? { hint } : {}) });
-	let valid = true;
-
 	const tokens = tokenizeProps(node.meta ?? "", kind);
 	const style = propStyle(kind);
 	const problems = [...tokens.problems];
 	const props = entry.props.safeParse(tokens.props);
 	if (!props.success) problems.push(...problemsFromZod(props.error, tokens.props, entry.props, style));
-	for (const p of problems) {
-		valid = false;
-		diagnostics.push(at(p.message, p.hint));
-	}
+	for (const p of problems) diagnostics.push(at(p.message, p.hint));
 
 	const body = entry.parseBody(node.value, { lineAt: (line) => fence.line + line, column: fence.column });
-	if (!body.ok) {
-		valid = false;
-		diagnostics.push(...body.diagnostics);
-	}
-	if (!valid || !props.success || !body.ok) return null;
+	if (!body.ok) diagnostics.push(...body.diagnostics);
+	if (problems.length || !props.success || !body.ok) return null;
 	return { type: kind, ...entry.assemble(props.data, body.value), position: fence } as Block;
 }
 

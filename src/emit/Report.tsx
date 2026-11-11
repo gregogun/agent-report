@@ -144,11 +144,9 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 function Meta({ blocks }: { blocks: RenderedBlock[] }) {
 	const diffs = blocks.filter((b): b is Of<"diff"> => b.type === "diff");
-	const facts = [
-		diffs.length && plural(diffs.length, "diff"),
-		diffs.reduce((n, d) => n + d.notes, 0) && plural(diffs.reduce((n, d) => n + d.notes, 0), "note"),
-		blocks.some((b) => b.type === "decision") && plural(blocks.filter((b) => b.type === "decision").length, "decision"),
-	].filter(Boolean);
+	const notes = diffs.reduce((n, d) => n + d.notes, 0);
+	const decisions = blocks.filter((b) => b.type === "decision").length;
+	const facts = [diffs.length && plural(diffs.length, "diff"), notes && plural(notes, "note"), decisions && plural(decisions, "decision")].filter(Boolean);
 	return facts.length ? <p className="meta">{facts.join(" \u00b7 ")}</p> : null;
 }
 

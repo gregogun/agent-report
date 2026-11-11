@@ -14,11 +14,12 @@ const USAGE = [
 	"  agent-report reference                         print the report format reference",
 ].join("\n");
 
-function printDiagnostics(file: string, diagnostics: Diagnostic[]) {
+function printDiagnostics(file: string, diagnostics: Diagnostic[]): number {
 	for (const d of diagnostics) {
 		console.error(`${file}:${d.position.line}:${d.position.column} ${d.message}`);
 		if (d.hint) console.error(`  ${d.hint}`);
 	}
+	return 1;
 }
 
 async function build(file: string, out: string | undefined): Promise<number> {
@@ -30,9 +31,9 @@ async function build(file: string, out: string | undefined): Promise<number> {
 		return 1;
 	}
 	const parsed = parseReport(source);
-	if (!parsed.ok) return printDiagnostics(file, parsed.diagnostics), 1;
+	if (!parsed.ok) return printDiagnostics(file, parsed.diagnostics);
 	const resolved = await resolveReport(parsed.value, { cwd: dirname(resolve(file)) });
-	if (!resolved.ok) return printDiagnostics(file, resolved.diagnostics), 1;
+	if (!resolved.ok) return printDiagnostics(file, resolved.diagnostics);
 	const html = emitReport(await renderReport(resolved.value));
 	const target = out ?? join(dirname(file), `${basename(file, extname(file))}.html`);
 	await mkdir(dirname(resolve(target)), { recursive: true });

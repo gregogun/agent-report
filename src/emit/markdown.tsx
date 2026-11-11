@@ -7,7 +7,7 @@ export const HeadingIds = createContext<WeakMap<object, string>>(new WeakMap());
 
 const SAFE_URL = /^(?:https?:|mailto:|#|\/|\.\/|\.\.\/)/i;
 
-function plainText(node: Node): string {
+export function plainText(node: Node): string {
 	if ("value" in node && typeof node.value === "string") return node.value;
 	if ("children" in node) return (node.children as Node[]).map(plainText).join("");
 	return "";

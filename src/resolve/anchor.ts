@@ -28,8 +28,8 @@ export function formatRanges(lines: number[]): string {
 
 export function anchorAnnotation(annotation: Annotation, hunks: Hunk[]): Result<ResolvedAnnotation> {
 	const { anchor, position } = annotation;
-	const side = anchor.side;
-	const shown = shownLines(hunks, anchor.side);
+	const { side } = anchor;
+	const shown = shownLines(hunks, side);
 	const fail = (message: string, hint: string): Result<ResolvedAnnotation> => {
 		const diagnostic: Diagnostic = { position, message, hint };
 		return { ok: false, diagnostics: [diagnostic] };
@@ -37,7 +37,7 @@ export function anchorAnnotation(annotation: Annotation, hunks: Hunk[]): Result<
 	const done = (start: number, end: number): Result<ResolvedAnnotation> => ({
 		ok: true,
 		value: {
-			side: anchor.side === "new" ? "additions" : "deletions",
+			side: side === "new" ? "additions" : "deletions",
 			lineNumber: end,
 			lines: { start, end },
 			body: annotation.body,

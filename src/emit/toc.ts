@@ -1,14 +1,7 @@
-import type { Markdown } from "../format/index.js";
 import type { RenderedBlock } from "../render/index.js";
-
-type Node = Markdown[number];
+import { plainText } from "./markdown.js";
 
 export type TocEntry = { id: string; text: string; level: 2 | 3 };
-
-const text = (node: Node): string => {
-	if ("value" in node && typeof node.value === "string") return node.value;
-	return "children" in node ? (node.children as Node[]).map(text).join("") : "";
-};
 
 const slug = (s: string) =>
 	s
@@ -25,7 +18,7 @@ export function headingIndex(blocks: readonly RenderedBlock[]): { entries: TocEn
 		if (block.type !== "prose") continue;
 		for (const node of block.body) {
 			if (node.type !== "heading" || node.depth > 3) continue;
-			const label = text(node);
+			const label = plainText(node);
 			const base = slug(label);
 			let id = base;
 			for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
