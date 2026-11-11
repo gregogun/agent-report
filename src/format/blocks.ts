@@ -19,6 +19,10 @@ export type BlockEntry<K extends BlockKind, P extends z.ZodObject, B> = {
 	parseBody(body: string, ctx: BodyContext): Result<B>;
 	assemble(props: z.output<P>, body: B): Fields<K>;
 	summary: string;
+	/* What goes between the fences. */
+	body: string;
+	/* Schema of a structured (YAML) body, when the body has keys. */
+	bodySchema?: z.ZodObject;
 	example: string;
 };
 
@@ -35,7 +39,15 @@ const diag = (ctx: BodyContext, line: number, message: string, hint?: string): D
 	...(hint ? { hint } : {}),
 });
 
-const ANCHOR_FORMS = '@new:42, @new:57-61, @old:12, @"quoted code" (side defaults to new), @old:"quoted code"';
+export const ANCHORS: { form: string; meaning: string }[] = [
+	{ form: "@new:42", meaning: "line 42 of the new file" },
+	{ form: "@new:57-61", meaning: "lines 57 to 61 of the new file" },
+	{ form: "@old:12", meaning: "line 12 of the old file" },
+	{ form: '@"quoted code"', meaning: "the one new-side line containing that text" },
+	{ form: '@old:"quoted code"', meaning: "the one old-side line containing that text" },
+];
+
+const ANCHOR_FORMS = ANCHORS.map((a) => a.form).join(", ");
 
 const LINES = /^(old|new):(\d+)(?:-(\d+))?/;
 const TEXT = /^(?:(old|new):)?"((?:[^"\\]|\\.)*)"/;
@@ -70,13 +82,14 @@ const rangeOf = (value: string): LineRange => {
 
 const diff = entry<"diff">()({
 	props: z.strictObject({
-		range: z.string().min(1).describe("git range, like main..HEAD"),
+		range: z.string().min(1).describe("git range the diff is taken from, like main..HEAD"),
 		path: z.string().min(1).describe("file path relative to the repo root"),
 		hunks: z
 			.string()
 			.regex(/^[1-9]\d*(-[1-9]\d*)?$/, "must be N or N-M with 1-based hunk numbers, like 2 or 2-3")
 			.refine((v) => rangeOf(v).start <= rangeOf(v).end, "range ends before it starts")
 			.transform(rangeOf)
+			.describe("which hunks of the file to show, 1-based: N or N-M. Omit for all hunks")
 			.optional(),
 	}),
 	parseBody(body, ctx) {
@@ -127,6 +140,7 @@ const diff = entry<"diff">()({
 		annotations,
 	}),
 	summary: "A git diff of one file with annotations anchored to lines or code text.",
+	body: "Annotations. Each starts with an anchor at the start of a line, followed by markdown text. Lines without an anchor continue the previous annotation. At least one annotation, each with text.",
 	example: [
 		"```diff range=main..HEAD path=src/auth.ts hunks=1-2",
 		"@new:42 Why this check moved up.",
@@ -143,15 +157,16 @@ const CALLOUT_KINDS = ["note", "concept", "edge-case", "warning"] as const;
 
 const callout = entry<"callout">()({
 	props: z.strictObject({
-		kind: z.enum(CALLOUT_KINDS).describe(CALLOUT_KINDS.join(" | ")),
-		title: z.string().optional(),
+		kind: z.enum(CALLOUT_KINDS).describe("what the aside is for"),
+		title: z.string().optional().describe("heading shown on the callout"),
 	}),
 	parseBody(body, ctx) {
 		if (!body.trim()) return fail([diag(ctx, 1, "callout body is empty", "write the callout text as markdown between the fences")]);
 		return ok(parseMarkdown(body));
 	},
 	assemble: (props, body) => ({ kind: props.kind, title: props.title ?? null, body }),
-	summary: "A highlighted aside. Kinds: note, concept, edge-case, warning.",
+	summary: "A highlighted aside for something the reader should not miss.",
+	body: "Markdown. Must not be empty.",
 	example: ['```callout kind=warning title="Migration order"', "Run the **schema** migration before deploying.", "```"].join("\n"),
 });
 
@@ -165,7 +180,8 @@ const decisionBody = z.strictObject({
 				reason: z.string().min(1).describe("why you rejected it"),
 			}),
 		)
-		.default([]),
+		.default([])
+		.describe("options you rejected"),
 });
 
 const decision = entry<"decision">()({
@@ -191,7 +207,9 @@ const decision = entry<"decision">()({
 		});
 	},
 	assemble: (props, body) => ({ title: props.title, ...body }),
-	summary: "A design decision: what was chosen, why, and the alternatives rejected. Body is YAML.",
+	summary: "A design decision: what was chosen, why, and the alternatives rejected.",
+	body: "YAML with the keys below. chosen, why and each alternative's reason are markdown.",
+	bodySchema: decisionBody,
 	example: [
 		'```decision title="Where to store sessions"',
 		"chosen: Redis",
@@ -215,7 +233,8 @@ const reviewChecklist = entry<"review-checklist">()({
 		return ok(first.children.map((item): Markdown => item.children));
 	},
 	assemble: (_props, items) => ({ items }),
-	summary: "Things the reviewer should check. Body is a markdown list.",
+	summary: "Things the reviewer should check.",
+	body: "A markdown list and nothing else. One item per check.",
 	example: ["```review-checklist", "- Check the migration is reversible", "- Confirm **auth** still rejects expired tokens", "```"].join("\n"),
 });
 

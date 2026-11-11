@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { registry } from "../src/format/blocks.js";
+import { ANCHORS, registry } from "../src/format/blocks.js";
 import { parseReport } from "../src/format/index.js";
+import { formatReference } from "../src/format/reference.js";
 
 const doc = (body: string) => `---\nversion: 1\ntitle: T\n---\n\n${body}\n`;
 
@@ -155,5 +156,26 @@ describe("diagnostics", () => {
 	it("leaves other fence languages as prose", () => {
 		const result = parseReport(doc("```ts\nconst a = 1;\n```"));
 		expect(result.ok && result.value.blocks.map((b) => b.type)).toEqual(["prose"]);
+	});
+});
+
+describe("reference", () => {
+	const text = formatReference();
+
+	it("validates every example it prints", () => {
+		const fences = [...text.matchAll(/````markdown\n([\s\S]*?)\n````/g)].map((m) => m[1] as string);
+		expect(fences).toHaveLength(Object.keys(registry).length);
+		for (const example of fences) {
+			const result = parseReport(doc(example));
+			expect(result.ok, example).toBe(true);
+		}
+	});
+
+	it("mentions every registry key, prop, and anchor form", () => {
+		for (const [kind, entry] of Object.entries(registry)) {
+			expect(text).toContain(`## \`${kind}\``);
+			for (const prop of Object.keys(entry.props.shape)) expect(text).toContain(`\`${prop}\``);
+		}
+		for (const a of ANCHORS) expect(text).toContain(a.form);
 	});
 });

@@ -9,15 +9,15 @@ import { readYaml } from "./yaml.js";
 
 export type * from "./types.js";
 
-const frontmatter = z.object({
+export const frontmatter = z.object({
 	version: z
 		.number()
 		.refine((v) => v === 1, {
 			error: (issue) => `unsupported format version ${String(issue.input)}`,
 			params: { hint: "set version: 1, the only format version this build reads" },
 		})
-		.describe("1"),
-	title: z.string().min(1).describe("report title"),
+		.describe("format version, must be 1"),
+	title: z.string().min(1).describe("report title, shown as the page heading"),
 });
 
 const isBlockKind = (lang: string | null | undefined): lang is BlockKind => !!lang && Object.hasOwn(registry, lang);
