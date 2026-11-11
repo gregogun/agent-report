@@ -43,15 +43,15 @@ Every report uses the same layout, so a reader learns it once. The design work g
 
 **Distribution.** One npm package, run through `npx`. Node 20 or later. No Bun-only APIs. No monorepo until a second consumer of the parser exists.
 
-**Scaffolding.** Create projects and config with generator and install commands, not by hand. Scaffold the viewer with `pnpm create vite` and the `react-ts` template. Add dependencies with `pnpm add`. Hand-write only what no generator produces.
+**Scaffolding.** Create projects and config with generator and install commands, not by hand: `pnpm init`, `pnpm add`, and `tsc --init`. Hand-write only what no generator produces.
 
 **Pipeline.** A build runs five stages, and each stage is a plain function from one data shape to the next:
 
 1. Parse. Turn the Markdown into a syntax tree with remark.
 2. Validate. Check each block's properties against its zod schema and produce the typed block tree.
 3. Resolve. Run `git` to fetch the patches and file slices that blocks reference, and anchor annotations to real lines.
-4. Render. Pre-render syntax highlighting with Shiki, and diff HTML with `@pierre/diffs` where it supports server rendering.
-5. Inject. Write the resolved tree as JSON into a prebuilt viewer template and save one HTML file.
+4. Render. Pre-render each diff with `@pierre/diffs/ssr`, one call per file, with annotation HTML as slot children of the diff.
+5. Emit. Render the viewer's React components to static HTML in Node, inline the CSS, and save one HTML file.
 
 Parse and validate do no I/O. All I/O lives in resolve and in the CLI.
 
@@ -65,7 +65,7 @@ Parse and validate do no I/O. All I/O lives in resolve and in the CLI.
 
 **Diffs come from git.** The CLI shells out to the `git` binary instead of using a JavaScript git library, so it respects the user's git config. `git diff` output is the input that `@pierre/diffs` takes.
 
-**Viewer.** A Vite and React app, built once when the package is published and bundled into a single-file template. The viewer receives only the resolved tree and knows nothing about git or the file system. It renders on the client at first. Static rendering with `renderToString` waits until the design settles.
+**Viewer.** React components that the build renders to static HTML in Node with `renderToStaticMarkup`. Reports ship no React and no diff JavaScript. A few lines of plain JavaScript run the table of contents, and `<details>` handles collapsing. The viewer receives only the resolved tree and knows nothing about git or the file system. Design work runs the build on fixture reports in watch mode, so the project needs no Vite. This replaced client rendering after the spike in `docs/spikes/pierre-diffs.md`. `@pierre/diffs` emits declarative shadow DOM, which browsers apply only in the initial HTML, and its client component costs about 1.5 MB against about 63 KB pre-rendered. The cost is that unchanged-line expanders and hover in diffs are inert.
 
 **Styling.** Hand-written CSS with design tokens as CSS variables, not Tailwind. `@pierre/diffs` and, later, Pele theme through CSS variables, so one set of tokens styles every surface. Inline at most one subsetted variable font as woff2, to keep reports small.
 
@@ -88,7 +88,7 @@ Stop if, after step 3, explain-diff is still the better choice for most diffs. I
 
 ## Left to the build
 
-- Whether `@pierre/diffs` pre-renders in Node, and the render stage design if it does not. The half-day spike decides.
+- Whether one copy of the `@pierre/diffs` CSS and icon sprite can serve every diff block. Each block carries about 48 KB of fixed overhead otherwise.
 - The exact text of the annotation anchor syntax inside a `diff` block body. The head-to-head retry count decides between candidate spellings.
 - The name of the command that prints the format reference.
 

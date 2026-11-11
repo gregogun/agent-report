@@ -1,0 +1,43 @@
+{
+  "name": "agent-report",
+  "version": "1.0.0",
+  "description": "Beautiful single-file reports from agent-written Markdown",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc",
+    "build": "tsdown src/cli/index.ts --format esm --platform node --out-dir dist",
+    "dev": "tsx watch src/cli/index.ts build fixtures/dev.md",
+    "report": "tsx src/cli/index.ts"
+  },
+  "license": "MIT",
+  "packageManager": "pnpm@10.5.2",
+  "dependencies": {
+    "@pierre/diffs": "^1.6.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.65.0",
+    "tsdown": "^0.23.7",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "type": "module",
+  "bin": {
+    "agent-report": "dist/index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
