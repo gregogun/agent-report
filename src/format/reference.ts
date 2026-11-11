@@ -69,7 +69,7 @@ export function formatReference(): string {
 		"",
 		"## Building",
 		"",
-		"`agent-report build <report.md> [-o out.html]` writes the HTML next to the report unless `-o` is given. Errors print as `file:line:column message` with a hint, and nothing is written. Diff blocks run `git diff <range> -- <path>` from the report file's directory, so that directory must be inside the repository and the range must resolve there. Hunks are numbered in the order git prints them.",
+		"`agent-report build <report.md> [-o out.html]` writes the HTML next to the report unless `-o` is given. Errors print as `file:line:column message` with a hint, and nothing is written. Diff blocks run git from the report file's directory, so that directory must be inside the repository and the range must resolve there. A diff block fails when the path has no changes in the range or matches more than one file. Hunks are numbered in the order git prints them.",
 		"",
 		"## Frontmatter",
 		"",
