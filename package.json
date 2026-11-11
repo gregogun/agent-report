@@ -5,8 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc",
-    "build": "tsdown src/cli/index.ts --format esm --platform node --out-dir dist",
-    "dev": "tsx watch src/cli/index.ts build fixtures/dev.md",
+    "build": "tsdown src/cli/index.ts --format esm --platform node --out-dir dist && cp src/emit/styles.css dist/styles.css",
+    "dev": "tsx watch --include fixtures/dev.md --include src/emit/styles.css src/cli/index.ts build fixtures/dev.md",
     "report": "tsx src/cli/index.ts"
   },
   "license": "MIT",
