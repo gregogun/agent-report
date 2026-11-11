@@ -296,6 +296,65 @@ index 84032ad..8661cb7 100644
       "range": "HEAD~1..HEAD",
       "type": "diff",
     },
+    {
+      "arrows": [
+        {
+          "from": "a",
+          "kind": "direct",
+          "position": {
+            "column": 1,
+            "line": 37,
+          },
+          "to": "lib",
+        },
+      ],
+      "boxes": [
+        {
+          "id": "a",
+          "label": "A",
+          "path": "a.ts",
+          "position": {
+            "column": 1,
+            "line": 30,
+          },
+        },
+        {
+          "id": "lib",
+          "label": "Lib",
+          "path": "lib",
+          "position": {
+            "column": 1,
+            "line": 33,
+          },
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 28,
+      },
+      "ref": null,
+      "type": "diagram",
+    },
+    {
+      "arrows": [],
+      "boxes": [
+        {
+          "id": "b",
+          "label": "B",
+          "path": "b.ts",
+          "position": {
+            "column": 1,
+            "line": 43,
+          },
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 41,
+      },
+      "ref": "HEAD~1",
+      "type": "diagram",
+    },
   ],
   "title": "Resolve fixture",
   "version": 1,

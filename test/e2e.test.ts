@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium } from "playwright";
@@ -49,6 +49,7 @@ beforeAll(async () => {
 			"",
 		].join("\n"),
 	);
+	for (const stage of ["cli", "format", "resolve", "render", "emit"]) mkdirSync(join(dir, "src", stage), { recursive: true });
 	copyFileSync(join(root, "fixtures/diagram/pipeline.md"), join(dir, "pipeline.md"));
 	for (const report of ["report.md", "pipeline.md"]) {
 		execFileSync(join(root, "node_modules/.bin/tsx"), ["--tsconfig", join(root, "tsconfig.json"), join(root, "src/cli/index.ts"), "build", report], { cwd: dir });
@@ -116,16 +117,18 @@ it("draws every box and arrow of a diagram in both colour schemes, with no label
 	expect(await page.evaluate(() => document.fonts.check("16px ARDiagram"))).toBe(true);
 
 	const nodes = page.locator(".diagram .pele-node");
-	expect(await nodes.locator("text").allTextContents()).toEqual(["CLI", "Format", "Resolve", "Render", "Emit"]);
+	expect(await nodes.locator("text tspan:first-child").allTextContents()).toEqual(["CLI", "Format", "Resolve", "Render", "Emit"]);
+	expect(await nodes.locator("text tspan:nth-child(2)").allTextContents()).toEqual(["src/cli", "src/format", "src/resolve", "src/render", "src/emit"]);
 	expect(await page.locator(".diagram .pele-edge").count()).toBe(5);
 
 	const overflow = await page.evaluate(() =>
 		[...document.querySelectorAll<SVGGElement>(".diagram .pele-node")].flatMap((node) => {
-			const text = node.querySelector("text") as SVGTextContentElement;
 			const rect = node.querySelector("rect") as SVGRectElement;
-			const label = text.getComputedTextLength();
 			const box = rect.width.baseVal.value;
-			return label > box ? [`${text.textContent}: label ${label} wider than box ${box}`] : [];
+			return [...node.querySelectorAll("tspan")].flatMap((line) => {
+				const width = line.getComputedTextLength();
+				return width > box ? [`${line.textContent}: line ${width} wider than box ${box}`] : [];
+			});
 		}),
 	);
 	expect(overflow).toEqual([]);

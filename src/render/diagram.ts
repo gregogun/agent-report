@@ -25,13 +25,15 @@ const entities: [RegExp, string][] = [
 	[/\s+/g, " "],
 ];
 
-const quoted = (label: string) => `"${entities.reduce((text, [pattern, entity]) => text.replace(pattern, entity), label).trim()}"`;
+const escaped = (text: string) => entities.reduce((acc, [pattern, entity]) => acc.replace(pattern, entity), text).trim();
+
+const boxLabel = (box: DiagramBox) => `"${escaped(box.label)}<br/>${escaped(box.path)}"`;
 
 export function diagramMermaid({ boxes, arrows }: Pick<DiagramInput, "boxes" | "arrows">): string {
 	const node = new Map(boxes.map((box, i) => [box.id, `b${i}`]));
 	return [
 		"flowchart LR",
-		...boxes.map((box) => `  ${node.get(box.id)}[${quoted(box.label)}]`),
+		...boxes.map((box) => `  ${node.get(box.id)}[${boxLabel(box)}]`),
 		...arrows.map((arrow) => `  ${node.get(arrow.from)} ${ARROW[arrow.kind]} ${node.get(arrow.to)}`),
 	].join("\n");
 }

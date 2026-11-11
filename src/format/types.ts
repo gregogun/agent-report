@@ -53,7 +53,7 @@ export type Block =
 			alternatives: { option: string; reason: Markdown }[];
 			position: Position;
 	  }
-	| { type: "diagram"; boxes: DiagramBox[]; arrows: DiagramArrow[]; position: Position }
+	| { type: "diagram"; ref: string | null; boxes: DiagramBox[]; arrows: DiagramArrow[]; position: Position }
 	| { type: "review-checklist"; items: Markdown[]; position: Position };
 
 export type BlockType = Block["type"];

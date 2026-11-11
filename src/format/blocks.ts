@@ -255,7 +255,9 @@ const diagramBody = z.strictObject({
 });
 
 const diagram = entry<"diagram">()({
-	props: z.strictObject({}),
+	props: z.strictObject({
+		ref: z.string().min(1).describe("git ref whose tree the box paths are checked against, like main. Omit to check the working tree").optional(),
+	}),
 	parseBody(body, ctx) {
 		const read = readYaml(body, ctx.lineAt(1), "diagram body");
 		if (read.errors.length) return fail(read.errors);
@@ -300,7 +302,7 @@ const diagram = entry<"diagram">()({
 		if (diagnostics.length) return fail(diagnostics);
 		return ok({ boxes, arrows });
 	},
-	assemble: (_props, body) => body,
+	assemble: (props, body) => ({ ...body, ref: props.ref ?? null }),
 	summary: "A diagram of a system as named boxes, each tied to a path in the repo, and the arrows between them.",
 	body: "YAML with the keys below. Every box id must be unique, and every arrow must name two box ids. At least one box.",
 	bodySchema: diagramBody,

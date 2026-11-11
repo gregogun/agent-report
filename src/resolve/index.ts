@@ -1,12 +1,16 @@
+import { stat } from "node:fs/promises";
+import { isAbsolute, join } from "node:path";
 import type { Block, Diagnostic, LineRange, Report, Result } from "../format/index.js";
 import { anchorAnnotation } from "./anchor.js";
-import { diffFile, repoRoot } from "./git.js";
+import { closestPath } from "./closest.js";
+import { diffFile, existsInCommit, listFiles, repoRoot, verifyCommit } from "./git.js";
 import { parsePatch, selectHunks, serializePatch } from "./patch.js";
 import type { ResolvedAnnotation, ResolvedBlock, ResolvedReport } from "./types.js";
 
 export type * from "./types.js";
 
 type DiffBlock = Extract<Block, { type: "diff" }>;
+type DiagramBlock = Extract<Block, { type: "diagram" }>;
 
 const hunkSelection = (r: LineRange) => (r.start === r.end ? `hunks=${r.start}` : `hunks=${r.start}-${r.end}`);
 const firstLine = (text: string) => text.split("\n").find((l) => l.trim()) ?? "no error text";
@@ -78,10 +82,40 @@ async function resolveDiff(block: DiffBlock, cwd: string): Promise<Result<Resolv
 	};
 }
 
+const escapesRoot = (path: string) => isAbsolute(path) || path.split("/").includes("..");
+
+async function resolveDiagram(block: DiagramBlock, root: string): Promise<Diagnostic[]> {
+	const { ref, position } = block;
+	if (ref !== null) {
+		const reason = ref.startsWith("-") ? `git ref "${ref}" starts with "-"` : (await verifyCommit(root, ref)).ok ? null : `git cannot resolve the ref "${ref}"`;
+		if (reason) return [{ position, message: reason, hint: `give a branch, tag or commit that exists in this repo, like main or HEAD` }];
+	}
+	const where = ref === null ? "the working tree" : ref;
+	const exists = async (path: string) =>
+		ref === null ? stat(join(root, path)).then(() => true, () => false) : (await existsInCommit(root, ref, path)).ok;
+
+	const diagnostics: Diagnostic[] = [];
+	for (const box of block.boxes) {
+		if (escapesRoot(box.path)) {
+			diagnostics.push({ position: box.position, message: `box "${box.id}" path "${box.path}" is outside the repo`, hint: "write the path relative to the repo root, like src/cli" });
+			continue;
+		}
+		if (await exists(box.path)) continue;
+		const listed = await listFiles(root, ref);
+		const near = listed.ok ? closestPath(box.path, listed.stdout.split("\n").filter(Boolean)) : null;
+		diagnostics.push({
+			position: box.position,
+			message: `box "${box.id}" points at "${box.path}", which does not exist in ${where}`,
+			hint: near ? `did you mean "${near}"?` : "write the path of a file or directory relative to the repo root",
+		});
+	}
+	return diagnostics;
+}
+
 export async function resolveReport(report: Report, opts: { cwd: string }): Promise<Result<ResolvedReport>> {
-	const diffs = report.blocks.filter((b): b is DiffBlock => b.type === "diff");
+	const needsRepo = report.blocks.filter((b): b is DiffBlock | DiagramBlock => b.type === "diff" || b.type === "diagram");
 	let root = opts.cwd;
-	if (diffs[0]) {
+	if (needsRepo[0]) {
 		const probe = await repoRoot(opts.cwd);
 		if (!probe.ok) {
 			const message =
@@ -92,7 +126,7 @@ export async function resolveReport(report: Report, opts: { cwd: string }): Prom
 						: `${opts.cwd} is not inside a git repository`;
 			return {
 				ok: false,
-				diagnostics: [{ position: diffs[0].position, message, hint: "run agent-report from the repo that holds the diffs, or from a subdirectory of it" }],
+				diagnostics: [{ position: needsRepo[0].position, message, hint: "run agent-report from the repo that holds the diffs and diagrams, or from a subdirectory of it" }],
 			};
 		}
 		root = probe.stdout.trim();
@@ -101,6 +135,11 @@ export async function resolveReport(report: Report, opts: { cwd: string }): Prom
 	const diagnostics: Diagnostic[] = [];
 	const blocks: ResolvedBlock[] = [];
 	for (const block of report.blocks) {
+		if (block.type === "diagram") {
+			diagnostics.push(...(await resolveDiagram(block, root)));
+			blocks.push(block);
+			continue;
+		}
 		if (block.type !== "diff") {
 			blocks.push(block);
 			continue;

@@ -13,13 +13,13 @@ const build = async (source: string) => {
 };
 
 const withDiagram = (label: string) =>
-	["---", "version: 1", "title: T", "---", "", "```diagram", "boxes:", "  - id: a", `    label: ${JSON.stringify(label)}`, "    path: src/a", "  - id: b", "    label: B", "    path: src/b", "arrows:", "  - from: a", "    to: b", "```", ""].join("\n");
+	["---", "version: 1", "title: T", "---", "", "```diagram", "boxes:", "  - id: a", `    label: ${JSON.stringify(label)}`, "    path: src/format", "  - id: b", "    label: B", "    path: src/resolve", "arrows:", "  - from: a", "    to: b", "```", ""].join("\n");
 
 const textsOf = (html: string) => [...html.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) => (m[1] as string).replace(/<[^>]+>/g, ""));
 
 it("draws a label that holds a backtick, quotes, angle brackets and a hash as literal text", async () => {
 	const html = await build(withDiagram('a`b "q" <i>x</i> #1'));
-	expect(textsOf(html)).toContain("a`b &quot;q&quot; &lt;i&gt;x&lt;/i&gt; #1");
+	expect(textsOf(html)).toContain("a`b &quot;q&quot; &lt;i&gt;x&lt;/i&gt; #1src/format");
 	expect(html).not.toContain("<i>");
 });
 

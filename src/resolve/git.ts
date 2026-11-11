@@ -25,3 +25,10 @@ export const repoRoot = (cwd: string) => run(cwd, ["rev-parse", "--show-toplevel
 
 export const diffFile = (cwd: string, range: string, path: string) =>
 	run(cwd, ["diff", "--no-color", "--no-ext-diff", range, "--", path]);
+
+export const verifyCommit = (cwd: string, ref: string) => run(cwd, ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]);
+
+export const existsInCommit = (cwd: string, ref: string, path: string) => run(cwd, ["cat-file", "-e", `${ref}:${path}`]);
+
+export const listFiles = (cwd: string, ref: string | null) =>
+	ref ? run(cwd, ["ls-tree", "-r", "--name-only", ref]) : run(cwd, ["ls-files"]);

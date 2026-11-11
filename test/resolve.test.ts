@@ -26,6 +26,8 @@ beforeAll(() => {
 	const b = lines(10, (i) => `line ${i}`);
 	write("a.ts", a);
 	write("b.ts", b);
+	mkdirSync(join(repo, "lib"));
+	write("lib/util.ts", ["export const util = 1;"]);
 	git(repo, "add", ".");
 	git(repo, "commit", "-q", "-m", "first");
 
@@ -124,7 +126,7 @@ describe("diagnostics", () => {
 			{
 				line: 6,
 				message: `${bare} is not inside a git repository`,
-				hint: "run agent-report from the repo that holds the diffs, or from a subdirectory of it",
+				hint: "run agent-report from the repo that holds the diffs and diagrams, or from a subdirectory of it",
 			},
 		]);
 	});
@@ -200,5 +202,51 @@ describe("diagnostics", () => {
 			"```diff range=HEAD~1..HEAD path=missing.ts\n```\n\n```diff range=HEAD~1..HEAD path=b.ts\n@new:99 Nope.\n```",
 		);
 		expect(got.map((d) => d.line)).toEqual([6, 10]);
+	});
+});
+
+describe("diagram paths", () => {
+	const diagram = (head: string, ...paths: string[]) =>
+		[`\`\`\`diagram${head}`, "boxes:", ...paths.flatMap((p, i) => [`  - id: b${i}`, `    label: B${i}`, `    path: ${p}`]), "```"].join("\n");
+
+	const resolves = async (body: string) => {
+		const parsed = parseReport(doc(body));
+		if (!parsed.ok) throw new Error(JSON.stringify(parsed.diagnostics));
+		return (await resolveReport(parsed.value, { cwd: repo })).ok;
+	};
+
+	it("accepts a file and a directory in the working tree", async () => {
+		expect(await resolves(diagram("", "a.ts", "lib", "lib/", "sub", "bin.dat"))).toBe(true);
+	});
+
+	it("accepts a file and a directory at a ref, and checks that ref rather than the working tree", async () => {
+		expect(await resolves(diagram(" ref=HEAD~1", "a.ts", "lib"))).toBe(true);
+		expect(await problems(diagram(" ref=HEAD~1", "bin.dat", "sub"))).toEqual([
+			{ line: 8, message: 'box "b0" points at "bin.dat", which does not exist in HEAD~1', hint: 'write the path of a file or directory relative to the repo root' },
+			{ line: 11, message: 'box "b1" points at "sub", which does not exist in HEAD~1', hint: 'write the path of a file or directory relative to the repo root' },
+		]);
+	});
+
+	it("fails an unknown path at the box's line and names the closest real path", async () => {
+		expect(await problems(diagram("", "a.ts", "lib/utils.ts", "elsewhere/b.ts"))).toEqual([
+			{ line: 11, message: 'box "b1" points at "lib/utils.ts", which does not exist in the working tree', hint: 'did you mean "lib/util.ts"?' },
+			{ line: 14, message: 'box "b2" points at "elsewhere/b.ts", which does not exist in the working tree', hint: 'did you mean "b.ts"?' },
+		]);
+	});
+
+	it("offers no suggestion when nothing is close", async () => {
+		const [d] = await problems(diagram("", "zzzzzz/qqqqqq"));
+		expect(d?.hint).toBe("write the path of a file or directory relative to the repo root");
+	});
+
+	it("rejects an unknown ref at the block's line, once", async () => {
+		expect(await problems(diagram(" ref=nope", "a.ts", "b.ts"))).toEqual([
+			{ line: 6, message: 'git cannot resolve the ref "nope"', hint: `give a branch, tag or commit that exists in this repo, like main or HEAD` },
+		]);
+	});
+
+	it("rejects a path that leaves the repo", async () => {
+		const [d] = await problems(diagram("", "../outside"));
+		expect(d?.message).toBe('box "b0" path "../outside" is outside the repo');
 	});
 });

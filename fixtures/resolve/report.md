@@ -24,3 +24,23 @@ Only the first hunk.
 @new:3 The renamed constant.
 @old:3 What it used to be.
 ```
+
+```diagram
+boxes:
+  - id: a
+    label: A
+    path: a.ts
+  - id: lib
+    label: Lib
+    path: lib
+arrows:
+  - from: a
+    to: lib
+```
+
+```diagram ref=HEAD~1
+boxes:
+  - id: b
+    label: B
+    path: b.ts
+```
