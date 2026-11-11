@@ -50,7 +50,7 @@ export async function renderReport(report: ResolvedReport): Promise<RenderedRepo
 	const blocks: RenderedBlock[] = await Promise.all(
 		report.blocks.map((b) => {
 			if (b.type === "diff") return renderDiff(b);
-			if (b.type === "diagram") return renderDiagram(b, diagrams++);
+			if (b.type === "diagram") return renderDiagram(b, diagrams++, report.headings);
 			return b;
 		}),
 	);

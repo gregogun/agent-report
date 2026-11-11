@@ -238,6 +238,11 @@ const diagramBody = z.strictObject({
 					.refine((v) => /\S/.test(v), { error: "must not be blank", params: { hint: "write the text to draw in the box, like Resolve" } })
 					.describe("text drawn in the box"),
 				path: z.string().min(1).describe("file or directory the box stands for, relative to the repo root"),
+				section: z
+					.string()
+					.refine((v) => /\S/.test(v), { error: "must not be blank", params: { hint: "write the text of a heading in this report, like How it works, or leave section out" } })
+					.describe("text of a heading in this report. Clicking the box jumps to it. Omit for a box with no link")
+					.optional(),
 			}),
 		)
 		.min(1)
@@ -285,7 +290,7 @@ const diagram = entry<"diagram">()({
 					hint: "give every box its own id, or delete the duplicate box",
 				});
 			}
-			return { id: b.id, label: b.label, path: b.path, position };
+			return { id: b.id, label: b.label, path: b.path, section: b.section ?? null, position };
 		});
 		const known = [...firstLine.keys()].join(", ");
 		const arrows = parsed.data.arrows.map((a, i): DiagramArrow => {

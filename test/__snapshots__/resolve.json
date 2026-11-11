@@ -317,6 +317,7 @@ index 84032ad..8661cb7 100644
             "column": 1,
             "line": 30,
           },
+          "section": null,
         },
         {
           "id": "lib",
@@ -326,6 +327,7 @@ index 84032ad..8661cb7 100644
             "column": 1,
             "line": 33,
           },
+          "section": null,
         },
       ],
       "position": {
@@ -346,6 +348,7 @@ index 84032ad..8661cb7 100644
             "column": 1,
             "line": 43,
           },
+          "section": null,
         },
       ],
       "position": {
@@ -356,6 +359,10 @@ index 84032ad..8661cb7 100644
       "type": "diagram",
     },
   ],
+  "headings": {
+    "entries": [],
+    "ids": {},
+  },
   "title": "Resolve fixture",
   "version": 1,
 }

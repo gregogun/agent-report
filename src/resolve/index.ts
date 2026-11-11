@@ -152,5 +152,5 @@ export async function resolveReport(report: Report, opts: { cwd: string }): Prom
 		diagnostics.sort((a, b) => a.position.line - b.position.line || a.position.column - b.position.column);
 		return { ok: false, diagnostics };
 	}
-	return { ok: true, value: { version: report.version, title: report.title, blocks } };
+	return { ok: true, value: { version: report.version, title: report.title, blocks, headings: report.headings } };
 }

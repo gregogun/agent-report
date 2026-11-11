@@ -13,9 +13,11 @@ boxes:
   - id: format
     label: Format
     path: src/format
+    section: Format owns the grammar
   - id: resolve
     label: Resolve
     path: src/resolve
+    section: Resolve checks the repo
   - id: render
     label: Render
     path: src/render
@@ -37,3 +39,11 @@ arrows:
 ```
 
 Solid arrows are direct calls. The dashed arrow is a looser dependency, since render only shares markdown helpers with emit.
+
+## Format owns the grammar
+
+Format parses the Markdown and the block bodies, and rejects anything the grammar does not allow. It does no I/O.
+
+## Resolve checks the repo
+
+Resolve asks git whether each diff range and each box path exists, so a report cannot describe code that is not there.

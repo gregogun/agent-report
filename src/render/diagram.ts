@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { render } from "pele";
-import type { DiagramArrow, DiagramBox } from "../format/index.js";
+import { findHeadings, type DiagramArrow, type DiagramBox, type HeadingIndex } from "../format/index.js";
 import { measurer } from "./measure.js";
 import type { RenderedDiagram } from "./types.js";
 
@@ -29,16 +29,21 @@ const escaped = (text: string) => entities.reduce((acc, [pattern, entity]) => ac
 
 const boxLabel = (box: DiagramBox) => `"${escaped(box.label)}<br/>${escaped(box.path)}"`;
 
-export function diagramMermaid({ boxes, arrows }: Pick<DiagramInput, "boxes" | "arrows">): string {
+export function diagramMermaid({ boxes, arrows }: Pick<DiagramInput, "boxes" | "arrows">, headings: HeadingIndex): string {
 	const node = new Map(boxes.map((box, i) => [box.id, `b${i}`]));
+	const links = boxes.flatMap((box) => {
+		const target = box.section === null ? undefined : findHeadings(headings, box.section)[0];
+		return target ? [`  click ${node.get(box.id)} href "#${target.id}"`] : [];
+	});
 	return [
 		"flowchart LR",
 		...boxes.map((box) => `  ${node.get(box.id)}[${boxLabel(box)}]`),
 		...arrows.map((arrow) => `  ${node.get(arrow.from)} ${ARROW[arrow.kind]} ${node.get(arrow.to)}`),
+		...links,
 	].join("\n");
 }
 
-export function renderDiagram(diagram: DiagramInput, index: number): RenderedDiagram {
-	const { svg } = render(diagramMermaid(diagram), { measurer, fontFamily: `${DIAGRAM_FONT}, sans-serif`, idPrefix: `d${index}` });
+export function renderDiagram(diagram: DiagramInput, index: number, headings: HeadingIndex): RenderedDiagram {
+	const { svg } = render(diagramMermaid(diagram, headings), { measurer, fontFamily: `${DIAGRAM_FONT}, sans-serif`, idPrefix: `d${index}` });
 	return { type: "diagram", svg, position: diagram.position };
 }

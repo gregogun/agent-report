@@ -138,6 +138,33 @@ describe("diagnostics", () => {
 		].sort((a, b) => a.line - b.line));
 	});
 
+	describe("diagram box sections", () => {
+		const linked = (section: string, ...headings: string[]) =>
+			[...headings.map((h) => `## ${h}\n`), "```diagram", "boxes:", "  - id: a", "    label: A", "    path: src/a", `    section: ${JSON.stringify(section)}`, "```"].join("\n");
+
+		it("fails a link to a missing heading at the box's line and lists the headings", () => {
+			expect(errors(doc(linked("Resolv", "Format", "Resolve")))).toEqual([
+				{
+					line: 12,
+					message: 'box "a" links to section "Resolv", but no heading in this report has that text',
+					hint: 'headings are: "Format", "Resolve". Fix the spelling, or remove section from the box',
+				},
+			]);
+		});
+
+		it("says so when the report has no headings", () => {
+			expect(errors(doc(linked("Anything")))[0]?.hint).toBe("this report has no headings. Add a ## heading to link to, or remove section from the box");
+		});
+
+		it("fails when two headings share the text", () => {
+			expect(errors(doc(linked("Same", "Same", "Same")))[0]?.message).toBe('box "a" links to section "Same", which is the text of the headings on lines 6 and 8');
+		});
+
+		it("accepts a heading regardless of case and spacing", () => {
+			expect(parseReport(doc(linked("  how   IT works ", "How it works"))).ok).toBe(true);
+		});
+	});
+
 	describe("diagram", () => {
 		const box = (id: string, extra = "") => `  - id: ${id}\n    label: ${id.toUpperCase()}\n    path: src/${id}${extra}`;
 		const diagram = (...lines: string[]) => doc(`\`\`\`diagram\n${lines.join("\n")}\n\`\`\``);

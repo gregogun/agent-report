@@ -1,12 +1,14 @@
 import type { Code, RootContent } from "mdast";
 import { z } from "zod";
+import { findHeadings, indexHeadings } from "./headings.js";
 import { type AnyEntry, type BlockKind, registry } from "./blocks.js";
 import { problemsFromZod, propStyle, yamlStyle } from "./issues.js";
 import { parseReportTree } from "./markdown.js";
 import { tokenizeProps } from "./props.js";
-import type { Block, Diagnostic, Report, Result } from "./types.js";
+import type { Block, Diagnostic, HeadingIndex, Report, Result } from "./types.js";
 import { readYaml } from "./yaml.js";
 
+export { findHeadings, plainText } from "./headings.js";
 export type * from "./types.js";
 
 export const frontmatter = z.object({
@@ -79,6 +81,38 @@ function nestedBlocks(node: RootContent, diagnostics: Diagnostic[]) {
 	}
 }
 
+const MAX_LISTED = 8;
+
+function unknownSections(blocks: readonly Block[], headings: HeadingIndex): Diagnostic[] {
+	const listed = headings.entries.slice(0, MAX_LISTED).map((h) => `"${h.text}"`);
+	const more = headings.entries.length - listed.length;
+	const available = headings.entries.length
+		? `headings are: ${listed.join(", ")}${more > 0 ? ` and ${more} more` : ""}. Fix the spelling`
+		: "this report has no headings. Add a ## heading to link to";
+	const diagnostics: Diagnostic[] = [];
+	for (const block of blocks) {
+		if (block.type !== "diagram") continue;
+		for (const box of block.boxes) {
+			if (box.section === null) continue;
+			const [first, second] = findHeadings(headings, box.section);
+			if (!first) {
+				diagnostics.push({
+					position: box.position,
+					message: `box "${box.id}" links to section "${box.section}", but no heading in this report has that text`,
+					hint: `${available}, or remove section from the box`,
+				});
+			} else if (second) {
+				diagnostics.push({
+					position: box.position,
+					message: `box "${box.id}" links to section "${box.section}", which is the text of the headings on lines ${first.line} and ${second.line}`,
+					hint: "rename one of the headings so the link has one target",
+				});
+			}
+		}
+	}
+	return diagnostics;
+}
+
 export function parseReport(source: string): Result<Report> {
 	const tree = parseReportTree(source);
 	const diagnostics: Diagnostic[] = [];
@@ -105,9 +139,12 @@ export function parseReport(source: string): Result<Report> {
 	}
 	flush();
 
+	const headings = indexHeadings(blocks);
+	diagnostics.push(...unknownSections(blocks, headings));
+
 	if (diagnostics.length || !meta) {
 		diagnostics.sort((a, b) => a.position.line - b.position.line || a.position.column - b.position.column);
 		return { ok: false, diagnostics };
 	}
-	return { ok: true, value: { version: 1, title: meta.title, blocks } };
+	return { ok: true, value: { version: 1, title: meta.title, blocks, headings } };
 }

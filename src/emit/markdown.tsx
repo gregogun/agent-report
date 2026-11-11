@@ -1,17 +1,11 @@
 import { createContext, type ReactNode, useContext } from "react";
-import type { Markdown } from "../format/index.js";
+import { type Markdown, plainText } from "../format/index.js";
 
 type Node = Markdown[number];
 
 export const HeadingIds = createContext<WeakMap<object, string>>(new WeakMap());
 
 const SAFE_URL = /^(?:https?:|mailto:|#|\/|\.\/|\.\.\/)/i;
-
-export function plainText(node: Node): string {
-	if ("value" in node && typeof node.value === "string") return node.value;
-	if ("children" in node) return (node.children as Node[]).map(plainText).join("");
-	return "";
-}
 
 function nodes(list: readonly Node[], headingShift: number): ReactNode[] {
 	return list.map((n, i) => <Mdast key={i} node={n} headingShift={headingShift} />);

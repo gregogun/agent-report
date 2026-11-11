@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
+import type { Heading } from "../format/index.js";
 import type { RenderedBlock, RenderedReport } from "../render/index.js";
 import { HeadingIds, Md } from "./markdown.js";
-import { headingIndex, type TocEntry } from "./toc.js";
 
 type Of<T extends RenderedBlock["type"]> = Extract<RenderedBlock, { type: T }>;
 
@@ -128,7 +128,7 @@ const tocScript = `(() => {
 	spy();
 })();`;
 
-function Contents({ entries }: { entries: TocEntry[] }) {
+function Contents({ entries }: { entries: Heading[] }) {
 	if (entries.length < 2) return null;
 	return (
 		<nav aria-label="Contents">
@@ -157,7 +157,7 @@ function Meta({ blocks }: { blocks: RenderedBlock[] }) {
 }
 
 export function Document({ report, css }: { report: RenderedReport; css: string }) {
-	const { entries, ids } = headingIndex(report.blocks);
+	const { entries, ids } = report.headings;
 	return (
 		<html lang="en">
 			<head>

@@ -49,6 +49,7 @@ boxes:
   - id: format
     label: Format
     path: src/format
+    section: Overview
 arrows:
   - from: cli
     to: format

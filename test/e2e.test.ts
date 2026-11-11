@@ -148,3 +148,28 @@ it("draws every box and arrow of a diagram in both colour schemes, with no label
 	expect(requests.every((url) => url.startsWith("file://"))).toBe(true);
 	await page.close();
 }, 30_000);
+
+it("jumps to the heading when a linked box is clicked, and lets the keyboard reach and follow the link", async () => {
+	const page = await browser.newPage({ viewport: { width: 1280, height: 500 } });
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	expect(await page.locator(".diagram a").count()).toBe(2);
+	expect(await page.locator(".diagram .pele-node:not(.clickable)").count()).toBe(3);
+
+	await page.locator(".diagram .pele-node", { hasText: "Format" }).click();
+	expect(await page.evaluate(() => location.hash)).toBe("#format-owns-the-grammar");
+	const heading = page.locator("#format-owns-the-grammar");
+	expect(await heading.textContent()).toBe("Format owns the grammar");
+	await page.waitForFunction(() => (document.getElementById("format-owns-the-grammar")?.getBoundingClientRect().top ?? Infinity) < innerHeight / 2);
+
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	const reached: string[] = [];
+	for (let i = 0; i < 40 && reached.length < 2; i++) {
+		await page.keyboard.press("Tab");
+		const href = await page.evaluate(() => (document.activeElement?.closest(".diagram") ? document.activeElement.getAttribute("href") : null));
+		if (href) reached.push(href);
+	}
+	expect(reached).toEqual(["#format-owns-the-grammar", "#resolve-checks-the-repo"]);
+	await page.keyboard.press("Enter");
+	expect(await page.evaluate(() => location.hash)).toBe("#resolve-checks-the-repo");
+	await page.close();
+}, 30_000);

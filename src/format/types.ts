@@ -28,7 +28,7 @@ export type Annotation = {
 
 export type CalloutKind = "note" | "concept" | "edge-case" | "warning";
 
-export type DiagramBox = { id: string; label: string; path: string; position: Position };
+export type DiagramBox = { id: string; label: string; path: string; section: string | null; position: Position };
 
 export type ArrowKind = "direct" | "loose";
 
@@ -58,8 +58,13 @@ export type Block =
 
 export type BlockType = Block["type"];
 
+export type Heading = { id: string; text: string; level: 2 | 3; line: number };
+
+export type HeadingIndex = { entries: Heading[]; ids: WeakMap<object, string> };
+
 export type Report = {
 	version: 1;
 	title: string;
 	blocks: Block[];
+	headings: HeadingIndex;
 };

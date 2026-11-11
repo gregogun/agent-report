@@ -25,3 +25,19 @@
 	font-size: 0.78em;
 	fill: var(--pele-muted);
 }
+
+.diagram .pele-node.clickable a {
+	cursor: pointer;
+	outline: none;
+}
+
+.diagram .pele-node.clickable a:hover rect {
+	fill: var(--voice-tint);
+	stroke: var(--voice);
+}
+
+.diagram .pele-node.clickable a:focus-visible rect {
+	fill: var(--voice-tint);
+	stroke: var(--voice);
+	stroke-width: 2.5px;
+}
