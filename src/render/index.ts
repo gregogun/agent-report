@@ -10,7 +10,7 @@ const slotName = (a: Pick<ResolvedAnnotation, "side" | "lineNumber">) => `annota
 
 function annotationHtml(a: ResolvedAnnotation, n: number): string {
 	const { start, end } = a.lines;
-	const where = `${a.side === "deletions" ? "Removed line" : "Line"}${start === end ? "" : "s"} ${start === end ? start : `${start}\u2013${end}`}`;
+	const where = `${a.side === "deletions" ? "Old line" : "Line"}${start === end ? "" : "s"} ${start === end ? start : `${start}\u2013${end}`}`;
 	return `<aside class="note"><p class="note-label"><span class="note-n">${n}</span>${where}</p>${renderToStaticMarkup(Md({ body: a.body }))}</aside>`;
 }
 
