@@ -1,0 +1,428 @@
+{
+  "blocks": [
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Overview",
+            },
+          ],
+          "depth": 1,
+          "type": "heading",
+        },
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "This change moves ",
+            },
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "sessions",
+                },
+              ],
+              "type": "strong",
+            },
+            {
+              "type": "text",
+              "value": " to Redis.",
+            },
+          ],
+          "type": "paragraph",
+        },
+        {
+          "lang": "ts",
+          "meta": null,
+          "type": "code",
+          "value": "const x = 1;",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 6,
+      },
+      "type": "prose",
+    },
+    {
+      "annotations": [
+        {
+          "anchor": {
+            "kind": "lines",
+            "lines": {
+              "end": 42,
+              "start": 42,
+            },
+            "side": "new",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Check moved up.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 15,
+          },
+        },
+        {
+          "anchor": {
+            "kind": "lines",
+            "lines": {
+              "end": 61,
+              "start": 57,
+            },
+            "side": "new",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "A range. Continues
+on the next line with ",
+                },
+                {
+                  "type": "inlineCode",
+                  "value": "code",
+                },
+                {
+                  "type": "text",
+                  "value": ".",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 16,
+          },
+        },
+        {
+          "anchor": {
+            "kind": "lines",
+            "lines": {
+              "end": 12,
+              "start": 12,
+            },
+            "side": "old",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "The removed guard.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 18,
+          },
+        },
+        {
+          "anchor": {
+            "kind": "text",
+            "side": "new",
+            "text": "token.expires",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Quoted code, side defaults to new.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 19,
+          },
+        },
+        {
+          "anchor": {
+            "kind": "text",
+            "side": "old",
+            "text": "legacyLogin()",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Quoted code on the old side.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 20,
+          },
+        },
+      ],
+      "hunks": {
+        "end": 2,
+        "start": 1,
+      },
+      "path": "src/auth.ts",
+      "position": {
+        "column": 1,
+        "line": 14,
+      },
+      "range": "main..HEAD",
+      "type": "diff",
+    },
+    {
+      "annotations": [
+        {
+          "anchor": {
+            "kind": "lines",
+            "lines": {
+              "end": 1,
+              "start": 1,
+            },
+            "side": "new",
+          },
+          "body": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Single hunk, one annotation.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+          "position": {
+            "column": 1,
+            "line": 24,
+          },
+        },
+      ],
+      "hunks": {
+        "end": 3,
+        "start": 3,
+      },
+      "path": "src/b.ts",
+      "position": {
+        "column": 1,
+        "line": 23,
+      },
+      "range": "main..HEAD",
+      "type": "diff",
+    },
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Between blocks.",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 27,
+      },
+      "type": "prose",
+    },
+    {
+      "body": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Tokens can look expired when clocks drift.",
+            },
+          ],
+          "type": "paragraph",
+        },
+        {
+          "children": [
+            {
+              "checked": null,
+              "children": [
+                {
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "one",
+                    },
+                  ],
+                  "type": "paragraph",
+                },
+              ],
+              "spread": false,
+              "type": "listItem",
+            },
+            {
+              "checked": null,
+              "children": [
+                {
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "two",
+                    },
+                  ],
+                  "type": "paragraph",
+                },
+              ],
+              "spread": false,
+              "type": "listItem",
+            },
+          ],
+          "ordered": false,
+          "spread": false,
+          "start": null,
+          "type": "list",
+        },
+      ],
+      "kind": "edge-case",
+      "position": {
+        "column": 1,
+        "line": 29,
+      },
+      "title": "Clock skew",
+      "type": "callout",
+    },
+    {
+      "alternatives": [
+        {
+          "option": "Postgres",
+          "reason": [
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Needs a cleanup job.",
+                },
+              ],
+              "type": "paragraph",
+            },
+          ],
+        },
+      ],
+      "chosen": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Redis",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 36,
+      },
+      "title": "Where to store sessions",
+      "type": "decision",
+      "why": [
+        {
+          "children": [
+            {
+              "type": "text",
+              "value": "Keys ",
+            },
+            {
+              "children": [
+                {
+                  "type": "text",
+                  "value": "expire",
+                },
+              ],
+              "type": "strong",
+            },
+            {
+              "type": "text",
+              "value": " natively.",
+            },
+          ],
+          "type": "paragraph",
+        },
+      ],
+    },
+    {
+      "items": [
+        [
+          {
+            "children": [
+              {
+                "type": "text",
+                "value": "Check the migration is reversible",
+              },
+            ],
+            "type": "paragraph",
+          },
+        ],
+        [
+          {
+            "children": [
+              {
+                "type": "text",
+                "value": "Confirm auth rejects expired tokens",
+              },
+            ],
+            "type": "paragraph",
+          },
+          {
+            "children": [
+              {
+                "checked": null,
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "type": "text",
+                        "value": "nested detail",
+                      },
+                    ],
+                    "type": "paragraph",
+                  },
+                ],
+                "spread": false,
+                "type": "listItem",
+              },
+            ],
+            "ordered": false,
+            "spread": false,
+            "start": null,
+            "type": "list",
+          },
+        ],
+      ],
+      "position": {
+        "column": 1,
+        "line": 44,
+      },
+      "type": "review-checklist",
+    },
+  ],
+  "title": "Session storage rewrite",
+  "version": 1,
+}

@@ -1,0 +1,159 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { registry } from "../src/format/blocks.js";
+import { parseReport } from "../src/format/index.js";
+
+const doc = (body: string) => `---\nversion: 1\ntitle: T\n---\n\n${body}\n`;
+
+function errors(source: string) {
+	const result = parseReport(source);
+	if (result.ok) throw new Error("expected diagnostics");
+	return result.diagnostics.map((d) => ({ line: d.position.line, message: d.message, hint: d.hint }));
+}
+
+const stripPositions = (value: unknown): unknown =>
+	JSON.parse(JSON.stringify(value, (key, v) => (key === "position" && v?.start && "offset" in v.start ? undefined : v)));
+
+describe("valid report", () => {
+	it("parses every block type and anchor form", () => {
+		const result = parseReport(readFileSync("fixtures/format/valid.md", "utf8"));
+		if (!result.ok) throw new Error(JSON.stringify(result.diagnostics));
+		expect(stripPositions(result.value)).toMatchFileSnapshot("./__snapshots__/valid.json");
+	});
+
+	it("parses every registry example", () => {
+		for (const entry of Object.values(registry)) {
+			const result = parseReport(doc(entry.example));
+			expect(result.ok, entry.example).toBe(true);
+		}
+	});
+});
+
+describe("diagnostics", () => {
+	it("requires frontmatter", () => {
+		expect(errors("# hi")).toEqual([
+			{ line: 1, message: "report is missing its frontmatter", hint: "start the report with a --- block containing version: 1 and title: <report title>" },
+		]);
+	});
+
+	it("requires a title", () => {
+		expect(errors("---\nversion: 1\n---\n")).toEqual([
+			{ line: 2, message: 'frontmatter is missing "title"', hint: "add a line like title: <report title>" },
+		]);
+	});
+
+	it("rejects other versions", () => {
+		expect(errors("---\nversion: 2\ntitle: T\n---\n")).toEqual([
+			{ line: 2, message: "frontmatter has invalid version: unsupported format version 2", hint: "set version: 1, the only format version this build reads" },
+		]);
+	});
+
+	it("reports props errors on the fence line", () => {
+		expect(errors(doc("```diff range=main..HEAD\n```"))).toEqual([
+			{ line: 6, message: 'diff block is missing "path"', hint: "add path=<file path relative to the repo root>" },
+		]);
+	});
+
+	it("lists allowed props for unknown keys", () => {
+		expect(errors(doc("```callout kind=note color=red\nhi\n```"))).toEqual([
+			{ line: 6, message: 'callout block has unknown prop "color"', hint: "allowed props: kind (required), title (optional)" },
+		]);
+	});
+
+	it("rejects bad enum values", () => {
+		expect(errors(doc("```callout kind=tip\nhi\n```"))).toEqual([
+			{ line: 6, message: 'callout block has invalid kind "tip"', hint: "use one of: note, concept, edge-case, warning" },
+		]);
+	});
+
+	it("rejects bad hunks", () => {
+		expect(errors(doc("```diff range=a..b path=x hunks=0\n```"))).toEqual([
+			{ line: 6, message: "diff block has invalid hunks: must be N or N-M with 1-based hunk numbers, like 2 or 2-3", hint: undefined },
+		]);
+	});
+
+	it("rejects unreadable props text", () => {
+		expect(errors(doc("```callout kind=note oops\nhi\n```"))).toEqual([
+			{ line: 6, message: 'callout block has unreadable props text "oops"', hint: 'write props as key=value, or key="value with spaces"' },
+		]);
+	});
+
+	it("rejects repeated props", () => {
+		expect(errors(doc("```callout kind=note kind=note\nhi\n```"))).toEqual([
+			{ line: 6, message: 'callout block repeats prop "kind"', hint: 'give "kind" once' },
+		]);
+	});
+
+	const anchors = '@new:42, @new:57-61, @old:12, @"quoted code" (side defaults to new), @old:"quoted code"';
+
+	it("rejects bad anchors on the exact body line", () => {
+		expect(errors(doc("```diff range=a..b path=x\n@new:1 ok\n@line 5 nope\n```"))).toEqual([
+			{ line: 8, message: 'invalid annotation anchor "@line"', hint: `accepted anchors: ${anchors}` },
+		]);
+	});
+
+	it("rejects text before the first annotation", () => {
+		expect(errors(doc("```diff range=a..b path=x\nstray\n```"))).toEqual([
+			{ line: 7, message: "diff body has text before the first annotation", hint: `start each annotation with an anchor: ${anchors}` },
+		]);
+	});
+
+	it("rejects empty annotations, line 0 and reversed ranges", () => {
+		expect(errors(doc("```diff range=a..b path=x\n@new:3\n@new:0 a\n@new:9-4 b\n```"))).toEqual([
+			{ line: 7, message: "annotation has no text after its anchor", hint: "write the annotation after the anchor, like @new:42 Why this changed" },
+			{ line: 8, message: "annotation line numbers start at 1", hint: "use @new:1 for the first line" },
+			{ line: 9, message: "annotation line range 9-4 ends before it starts", hint: "write @new:4-9" },
+		]);
+	});
+
+	it("rejects an empty callout", () => {
+		expect(errors(doc("```callout kind=note\n```"))).toEqual([
+			{ line: 7, message: "callout body is empty", hint: "write the callout text as markdown between the fences" },
+		]);
+	});
+
+	it("rejects a checklist that is not a list", () => {
+		expect(errors(doc("```review-checklist\nsome text\n```"))).toEqual([
+			{ line: 7, message: "review-checklist body must be a markdown list and nothing else", hint: "write one item per line, like - Check the migration is reversible" },
+		]);
+	});
+
+	it("maps YAML syntax errors to report lines", () => {
+		const [first] = errors(doc('```decision title=T\nchosen: [oops\nwhy: x\n```'));
+		expect(first?.message).toMatch(/^decision body is not valid YAML: /);
+		expect(first?.line).toBe(8);
+	});
+
+	it("maps decision schema errors to the YAML line", () => {
+		expect(errors(doc("```decision title=T\nchosen: A\nwhy: B\nalternatives:\n  - option: C\n```"))).toEqual([
+			{ line: 10, message: 'decision body alternatives[0] is missing "reason"', hint: "add a line like reason: <why you rejected it>" },
+		]);
+	});
+
+	it("reports a missing decision key and unknown key", () => {
+		expect(errors(doc("```decision title=T\nchosen: A\nextra: 1\n```"))).toEqual([
+			{ line: 8, message: 'decision body has unknown key "extra"', hint: "allowed keys: chosen (required), why (required), alternatives (optional)" },
+			{ line: 7, message: 'decision body is missing "why"', hint: "add a line like why: <why you chose it>" },
+		].sort((a, b) => a.line - b.line));
+	});
+
+	it("reports every error in one pass", () => {
+		const found = errors(
+			"---\nversion: 1\n---\n\n```diff range=a..b\n@bad\n```\n\n```callout kind=tip\n```\n\n```review-checklist\ntext\n```\n",
+		);
+		expect(found.map((d) => d.message)).toEqual([
+			'frontmatter is missing "title"',
+			'diff block is missing "path"',
+			'invalid annotation anchor "@bad"',
+			'callout block has invalid kind "tip"',
+			"callout body is empty",
+			"review-checklist body must be a markdown list and nothing else",
+		]);
+		expect(found.map((d) => d.line)).toEqual([2, 5, 6, 9, 10, 13]);
+	});
+
+	it("leaves other fence languages as prose", () => {
+		const result = parseReport(doc("```ts\nconst a = 1;\n```"));
+		expect(result.ok && result.value.blocks.map((b) => b.type)).toEqual(["prose"]);
+	});
+});
