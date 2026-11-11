@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# Head-to-head: the explain-diff gist prompt (HTML) vs the explain-diff example skill (agent-report).
+# Usage: scripts/head-to-head [--dry-run] [--model MODEL] [--out DIR] CASES_FILE
+# Env: AGENT_CMD (default "claude"), AGENT_REPORT_CMD (default "node <repo>/dist/index.mjs"), GIST_FILE.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GIST_URL="https://gist.githubusercontent.com/geoffreylitt/a29df1b5f9865506e8952488eac3d524/raw/126e7fe9eecaafadfe1ac8bb183d135812b608f2/explain-diff-html.md"
+SKILL="$ROOT/examples/skills/explain-diff/SKILL.md"
+AGENT_CMD="${AGENT_CMD:-claude}"
+export AGENT_REPORT_CMD="${AGENT_REPORT_CMD:-node $ROOT/dist/index.mjs}"
+MODEL="sonnet"
+DRY=0
+OUT=""
+CASES=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY=1 ;;
+    --model) MODEL="$2"; shift ;;
+    --out) OUT="$2"; shift ;;
+    -h|--help) sed -n 2,5p "$0"; exit 0 ;;
+    *) CASES="$1" ;;
+  esac
+  shift
+done
+[ -n "$CASES" ] && [ -f "$CASES" ] || { echo "usage: scripts/head-to-head [--dry-run] [--model MODEL] [--out DIR] CASES_FILE" >&2; exit 2; }
+OUT="${OUT:-$ROOT/head-to-head-runs/$(date +%Y%m%d-%H%M%S)}"
+if [ "$DRY" = 1 ]; then case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac; else OUT="$(mkdir -p "$OUT" && cd "$OUT" && pwd)"; fi
+
+AGENT_FLAGS=(-p --model "$MODEL" --output-format json --permission-mode acceptEdits --allowedTools "Read,Write,Edit,Glob,Grep,Bash")
+
+run_agent() { # arm dir repo workdir prompt_file
+  local arm="$1" dir="$2" repo="$3" prompt="$4"
+  local start end
+  start=$(date +%s)
+  (cd "$repo" && H2H_ARM="$arm" H2H_DIR="$dir" PATH="$dir/bin:$PATH" \
+    $AGENT_CMD "${AGENT_FLAGS[@]}" --add-dir "$dir" < "$prompt" > "$dir/agent.json" 2> "$dir/agent.stderr") || echo "agent exited non-zero" >> "$dir/agent.stderr"
+  end=$(date +%s)
+  echo $((end - start)) > "$dir/wall_seconds"
+}
+
+make_shim() { # dir
+  mkdir -p "$1/bin"
+  cat > "$1/bin/agent-report" <<SHIM
+#!/usr/bin/env bash
+sub="\${1:-}"
+n=\$(( \$(wc -l < "$1/build.log" 2>/dev/null || echo 0) + 1 ))
+$AGENT_REPORT_CMD "\$@" > "$1/call-\$n.out" 2>&1
+code=\$?
+cat "$1/call-\$n.out"
+printf '%s\t%s\t%s\n' "\$n" "\$sub" "\$code" >> "$1/build.log"
+exit \$code
+SHIM
+  chmod +x "$1/bin/agent-report"
+}
+
+summarize() { # case arm dir final_ok_file
+  node -e '
+    const fs = require("fs");
+    const [name, arm, dir, artifact] = process.argv.slice(1);
+    const read = (f) => { try { return fs.readFileSync(dir + "/" + f, "utf8"); } catch { return ""; } };
+    let j = {}; try { j = JSON.parse(read("agent.json")); } catch {}
+    const builds = read("build.log").split("\n").filter(Boolean).map((l) => l.split("\t")).filter((p) => p[1] === "build");
+    let first = "-", retries = "-", ok;
+    if (arm === "agent-report") {
+      first = builds.length && builds[0][2] === "0" ? "y" : "n";
+      retries = String(Math.max(builds.length - 1, 0));
+      ok = builds.length && builds[builds.length - 1][2] === "0" && fs.existsSync(artifact) ? "y" : "n";
+    } else ok = fs.existsSync(artifact) ? "y" : "n";
+    const secs = j.duration_ms != null ? (j.duration_ms / 1000).toFixed(1) : read("wall_seconds").trim() || "?";
+    const cost = j.total_cost_usd != null ? j.total_cost_usd.toFixed(4) : "?";
+    const u = j.usage || {};
+    const tok = (u.input_tokens ?? "?") + "+" + (u.output_tokens ?? "?");
+    console.log([name, arm, first, retries, ok, builds.length || "-", secs, cost, tok].join("\t"));
+  ' "$@"
+}
+
+[ "$DRY" = 1 ] || printf 'case\tarm\tfirst_draft_valid\tretries\tfinal_ok\tbuild_attempts\tduration_s\tcost_usd\ttokens_in+out\n' > "$OUT/results.tsv"
+[ "$DRY" = 1 ] && echo "# dry run: nothing below is executed. Output dir: $OUT"
+
+i=0
+while read -r repo range _; do
+  case "$repo" in ''|'#'*) continue ;; esac
+  i=$((i + 1))
+  repo="$(cd "$repo" && pwd)"
+  name="$(printf '%02d-%s-%s' "$i" "$(basename "$repo")" "$range" | tr -c 'A-Za-z0-9.\n-' '_')"
+  echo "## case $name: $repo $range"
+
+  for arm in explain-diff-html agent-report; do
+    dir="$OUT/$name/$arm"
+    if [ "$arm" = explain-diff-html ]; then
+      artifact="$dir/explanation.html"
+      workdir="$dir"
+      task="Explain the change in the git range $range of the repository in the current directory. Write the single HTML file to $artifact. This overrides the file location above."
+    else
+      workdir="$repo/.head-to-head-$$-$i"
+      artifact="$dir/report.html"
+      task="Explain the change in the git range $range of the repository in the current directory. Use $range as the range in every diff block. Write the report to $workdir/report.md. The agent-report CLI is on your PATH as agent-report, so use that instead of npx."
+    fi
+    echo "# $arm"
+    if [ "$DRY" = 1 ]; then
+      if [ "$arm" = explain-diff-html ]; then echo "# prompt: gist ${GIST_FILE:-$GIST_URL (fetched with curl -fsSL)} + task: $task"
+      else echo "# prompt: $SKILL (frontmatter stripped) + task: $task"; echo "# shim: $dir/bin/agent-report logs each call to $dir/build.log and runs: $AGENT_REPORT_CMD \"\$@\""; fi
+      printf '(cd %s && PATH=%s/bin:$PATH %s' "$repo" "$dir" "$AGENT_CMD"
+      printf ' %q' "${AGENT_FLAGS[@]}"; printf ' --add-dir %s < %s/prompt.txt > %s/agent.json)\n' "$dir" "$dir" "$dir"
+      continue
+    fi
+
+    mkdir -p "$dir" "$workdir"
+    : > "$dir/build.log"
+    if [ "$arm" = explain-diff-html ]; then
+      { if [ -n "${GIST_FILE:-}" ]; then cat "$GIST_FILE"; else curl -fsSL "$GIST_URL"; fi; printf '\n\n%s\n' "$task"; } > "$dir/prompt.txt"
+    else
+      { awk 'BEGIN{n=0} /^---$/ && n<2 {n++; next} n>=2' "$SKILL"; printf '\n\n%s\n' "$task"; } > "$dir/prompt.txt"
+      make_shim "$dir"
+    fi
+    export H2H_ARTIFACT="$artifact" H2H_WORKDIR="$workdir" H2H_RANGE="$range"
+    run_agent "$arm" "$dir" "$repo" "$dir/prompt.txt"
+    if [ "$arm" = agent-report ]; then
+      [ -f "$workdir/report.md" ] && cp "$workdir/report.md" "$dir/report.md"
+      [ -f "$workdir/report.html" ] && cp "$workdir/report.html" "$artifact"
+      rm -rf "$workdir"
+    fi
+    summarize "$name" "$arm" "$dir" "$artifact" | tee -a "$OUT/results.tsv"
+  done
+done < "$CASES"
+
+[ "$DRY" = 1 ] || { echo; echo "results: $OUT/results.tsv"; }

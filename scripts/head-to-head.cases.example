@@ -1,0 +1,3 @@
+# <repo path> <range>, one case per line. No spaces in either field.
+# Relative repo paths resolve against the directory you run the script from.
+. 7bcd416..HEAD
