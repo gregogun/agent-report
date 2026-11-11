@@ -12,6 +12,12 @@ export type RenderedDiff = {
 	position: Position;
 };
 
-export type RenderedBlock = Exclude<ResolvedBlock, { type: "diff" }> | RenderedDiff;
+export type RenderedDiagram = {
+	type: "diagram";
+	svg: string;
+	position: Position;
+};
+
+export type RenderedBlock = Exclude<ResolvedBlock, { type: "diff" | "diagram" }> | RenderedDiff | RenderedDiagram;
 
 export type RenderedReport = Omit<ResolvedReport, "blocks"> & { blocks: RenderedBlock[] };

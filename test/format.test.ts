@@ -138,6 +138,76 @@ describe("diagnostics", () => {
 		].sort((a, b) => a.line - b.line));
 	});
 
+	describe("diagram", () => {
+		const box = (id: string, extra = "") => `  - id: ${id}\n    label: ${id.toUpperCase()}\n    path: src/${id}${extra}`;
+		const diagram = (...lines: string[]) => doc(`\`\`\`diagram\n${lines.join("\n")}\n\`\`\``);
+
+		it("rejects a duplicate box id at the second box's id line", () => {
+			expect(errors(diagram("boxes:", box("a"), box("b"), box("a"), "arrows:", "  - from: a", "    to: b"))).toEqual([
+				{
+					line: 14,
+					message: 'diagram body box id "a" is already used by the box on line 8',
+					hint: "give every box its own id, or delete the duplicate box",
+				},
+			]);
+		});
+
+		it("rejects an arrow to an unknown box at the arrow's line and lists the boxes", () => {
+			expect(errors(diagram("boxes:", box("a"), box("b"), "arrows:", "  - from: a", "    to: bee"))).toEqual([
+				{
+					line: 16,
+					message: 'diagram body arrows[0].to "bee" is not the id of any box',
+					hint: "boxes are: a, b. Fix the spelling, or add a box with id bee",
+				},
+			]);
+		});
+
+		it("reports an unknown arrow start on its own line", () => {
+			expect(errors(diagram("boxes:", box("a"), "arrows:", "  - from: zed", "    to: a"))).toEqual([
+				{
+					line: 12,
+					message: 'diagram body arrows[0].from "zed" is not the id of any box',
+					hint: "boxes are: a. Fix the spelling, or add a box with id zed",
+				},
+			]);
+		});
+
+		it("reports a missing field at the box that lacks it", () => {
+			expect(errors(diagram("boxes:", "  - id: a", "    path: src/a"))).toEqual([
+				{ line: 8, message: 'diagram body boxes[0] is missing "label"', hint: "add a line like label: <text drawn in the box>" },
+			]);
+		});
+
+		it("reports a wrongly typed field on its line", () => {
+			expect(errors(diagram("boxes:", "  - id: a", "    label: [x]", "    path: src/a"))).toEqual([
+				{ line: 9, message: 'diagram body boxes[0] has invalid "label": expected string', hint: undefined },
+			]);
+		});
+
+		it("rejects an unknown arrow kind with the allowed values", () => {
+			expect(errors(diagram("boxes:", box("a"), box("b"), "arrows:", "  - from: a", "    to: b", "    kind: maybe"))).toEqual([
+				{ line: 17, message: 'diagram body arrows[0] has invalid kind "maybe"', hint: "use one of: direct, loose" },
+			]);
+		});
+
+		it("rejects a box id Mermaid could not carry, with a hint", () => {
+			expect(errors(diagram("boxes:", "  - id: my box", "    label: A", "    path: src/a"))).toEqual([
+				{
+					line: 8,
+					message: "diagram body boxes[0] has invalid id: must start with a letter and use only letters, digits, - and _",
+					hint: "use a short name like resolve or http-api, with no spaces",
+				},
+			]);
+		});
+
+		it("keeps arrows optional and defaults them to direct", () => {
+			const result = parseReport(diagram("boxes:", box("a"), box("b"), "arrows:", "  - from: a", "    to: b"));
+			const block = result.ok ? result.value.blocks[0] : undefined;
+			expect(block?.type === "diagram" && block.arrows.map((a) => a.kind)).toEqual(["direct"]);
+			expect(parseReport(diagram("boxes:", box("a"))).ok).toBe(true);
+		});
+	});
+
 	it("reports every error in one pass", () => {
 		const found = errors(
 			"---\nversion: 1\n---\n\n```diff range=a..b\n@bad\n```\n\n```callout kind=tip\n```\n\n```review-checklist\ntext\n```\n",

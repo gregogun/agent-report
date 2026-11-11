@@ -2,6 +2,7 @@ import { preloadPatchDiff } from "@pierre/diffs/ssr";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Md } from "../emit/markdown.js";
 import type { ResolvedAnnotation, ResolvedDiff, ResolvedReport } from "../resolve/index.js";
+import { renderDiagram } from "./diagram.js";
 import type { RenderedBlock, RenderedDiff, RenderedReport } from "./types.js";
 
 export type * from "./types.js";
@@ -45,6 +46,13 @@ async function renderDiff(diff: ResolvedDiff): Promise<RenderedDiff> {
 }
 
 export async function renderReport(report: ResolvedReport): Promise<RenderedReport> {
-	const blocks: RenderedBlock[] = await Promise.all(report.blocks.map((b) => (b.type === "diff" ? renderDiff(b) : b)));
+	let diagrams = 0;
+	const blocks: RenderedBlock[] = await Promise.all(
+		report.blocks.map((b) => {
+			if (b.type === "diff") return renderDiff(b);
+			if (b.type === "diagram") return renderDiagram(b, diagrams++);
+			return b;
+		}),
+	);
 	return { ...report, blocks };
 }

@@ -66,6 +66,10 @@ function Decision({ block }: { block: Of<"decision"> }) {
 	);
 }
 
+function Diagram({ block }: { block: Of<"diagram"> }) {
+	return <figure className="diagram" dangerouslySetInnerHTML={{ __html: block.svg }} />;
+}
+
 function Checklist({ block }: { block: Of<"review-checklist"> }) {
 	return (
 		<section className="checklist">
@@ -98,6 +102,8 @@ function Block({ block }: { block: RenderedBlock }): ReactNode {
 			return <Callout block={block} />;
 		case "decision":
 			return <Decision block={block} />;
+		case "diagram":
+			return <Diagram block={block} />;
 		case "review-checklist":
 			return <Checklist block={block} />;
 	}

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium } from "playwright";
@@ -49,7 +49,10 @@ beforeAll(async () => {
 			"",
 		].join("\n"),
 	);
-	execFileSync(join(root, "node_modules/.bin/tsx"), ["--tsconfig", join(root, "tsconfig.json"), join(root, "src/cli/index.ts"), "build", "report.md"], { cwd: dir });
+	copyFileSync(join(root, "fixtures/diagram/pipeline.md"), join(dir, "pipeline.md"));
+	for (const report of ["report.md", "pipeline.md"]) {
+		execFileSync(join(root, "node_modules/.bin/tsx"), ["--tsconfig", join(root, "tsconfig.json"), join(root, "src/cli/index.ts"), "build", report], { cwd: dir });
+	}
 	browser = await chromium.launch();
 }, 60_000);
 
@@ -98,5 +101,47 @@ it("shows the contents rail, follows scroll, and fits a phone without page scrol
 	await page.setViewportSize({ width: 375, height: 800 });
 	const widths = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
 	expect(widths[0]).toBe(widths[1]);
+	await page.close();
+}, 30_000);
+
+it("draws every box and arrow of a diagram in both colour schemes, with no label wider than its box and no network", async () => {
+	const page = await browser.newPage();
+	const requests: string[] = [];
+	await page.route("**/*", (route) => {
+		requests.push(route.request().url());
+		return route.continue();
+	});
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	await page.evaluate(() => document.fonts.ready);
+	expect(await page.evaluate(() => document.fonts.check("16px ARDiagram"))).toBe(true);
+
+	const nodes = page.locator(".diagram .pele-node");
+	expect(await nodes.locator("text").allTextContents()).toEqual(["CLI", "Format", "Resolve", "Render", "Emit"]);
+	expect(await page.locator(".diagram .pele-edge").count()).toBe(5);
+
+	const overflow = await page.evaluate(() =>
+		[...document.querySelectorAll<SVGGElement>(".diagram .pele-node")].flatMap((node) => {
+			const text = node.querySelector("text") as SVGTextContentElement;
+			const rect = node.querySelector("rect") as SVGRectElement;
+			const label = text.getComputedTextLength();
+			const box = rect.width.baseVal.value;
+			return label > box ? [`${text.textContent}: label ${label} wider than box ${box}`] : [];
+		}),
+	);
+	expect(overflow).toEqual([]);
+
+	const fills: string[] = [];
+	for (const scheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme: scheme });
+		const box = await page.locator(".diagram .pele-node rect").first().evaluate((el) => {
+			const r = el.getBoundingClientRect();
+			return { visible: r.width > 0 && r.height > 0, fill: getComputedStyle(el).fill };
+		});
+		expect(box.visible).toBe(true);
+		fills.push(box.fill);
+	}
+	expect(new Set(fills).size).toBe(2);
+
+	expect(requests.every((url) => url.startsWith("file://"))).toBe(true);
 	await page.close();
 }, 30_000);

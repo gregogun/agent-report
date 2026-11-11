@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { problemsFromZod, yamlStyle } from "./issues.js";
 import { parseMarkdown } from "./markdown.js";
-import type { Annotation, AnnotationAnchor, Block, BlockType, Diagnostic, LineRange, Markdown, Result } from "./types.js";
+import type { Annotation, AnnotationAnchor, Block, BlockType, Diagnostic, DiagramArrow, DiagramBox, LineRange, Markdown, Result } from "./types.js";
 import { readYaml } from "./yaml.js";
 
 export type BlockKind = Exclude<BlockType, "prose">;
@@ -218,6 +218,114 @@ const decision = entry<"decision">()({
 	].join("\n"),
 });
 
+const ARROW_KINDS = ["direct", "loose"] as const;
+
+const BOX_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+const diagramBody = z.strictObject({
+	boxes: z
+		.array(
+			z.strictObject({
+				id: z
+					.string()
+					.refine((v) => BOX_ID.test(v), {
+						error: "must start with a letter and use only letters, digits, - and _",
+						params: { hint: "use a short name like resolve or http-api, with no spaces" },
+					})
+					.describe("short name that arrows refer to"),
+				label: z
+					.string()
+					.refine((v) => /\S/.test(v), { error: "must not be blank", params: { hint: "write the text to draw in the box, like Resolve" } })
+					.describe("text drawn in the box"),
+				path: z.string().min(1).describe("file or directory the box stands for, relative to the repo root"),
+			}),
+		)
+		.min(1)
+		.describe("the boxes of the diagram"),
+	arrows: z
+		.array(
+			z.strictObject({
+				from: z.string().min(1).describe("id of the box the arrow starts at"),
+				to: z.string().min(1).describe("id of the box the arrow points to"),
+				kind: z.enum(ARROW_KINDS).default("direct").describe("direct is a call, drawn solid. loose is a looser dependency, drawn dashed"),
+			}),
+		)
+		.default([])
+		.describe("the arrows between boxes"),
+});
+
+const diagram = entry<"diagram">()({
+	props: z.strictObject({}),
+	parseBody(body, ctx) {
+		const read = readYaml(body, ctx.lineAt(1), "diagram body");
+		if (read.errors.length) return fail(read.errors);
+		const parsed = diagramBody.safeParse(read.value);
+		const at = (path: PropertyKey[]) => ({ line: read.lineOf(path), column: ctx.column });
+		if (!parsed.success) {
+			return fail(
+				problemsFromZod(parsed.error, read.value, diagramBody, yamlStyle("diagram body")).map((p) => ({
+					position: at(p.path),
+					message: p.message,
+					...(p.hint ? { hint: p.hint } : {}),
+				})),
+			);
+		}
+		const diagnostics: Diagnostic[] = [];
+		const firstLine = new Map<string, number>();
+		const boxes = parsed.data.boxes.map((b, i): DiagramBox => {
+			const position = at(["boxes", i]);
+			const earlier = firstLine.get(b.id);
+			if (earlier === undefined) firstLine.set(b.id, position.line);
+			else {
+				diagnostics.push({
+					position: at(["boxes", i, "id"]),
+					message: `diagram body box id "${b.id}" is already used by the box on line ${earlier}`,
+					hint: "give every box its own id, or delete the duplicate box",
+				});
+			}
+			return { id: b.id, label: b.label, path: b.path, position };
+		});
+		const known = [...firstLine.keys()].join(", ");
+		const arrows = parsed.data.arrows.map((a, i): DiagramArrow => {
+			for (const end of ["from", "to"] as const) {
+				if (firstLine.has(a[end])) continue;
+				diagnostics.push({
+					position: at(["arrows", i, end]),
+					message: `diagram body arrows[${i}].${end} "${a[end]}" is not the id of any box`,
+					hint: `boxes are: ${known}. Fix the spelling, or add a box with id ${a[end]}`,
+				});
+			}
+			return { from: a.from, to: a.to, kind: a.kind, position: at(["arrows", i]) };
+		});
+		if (diagnostics.length) return fail(diagnostics);
+		return ok({ boxes, arrows });
+	},
+	assemble: (_props, body) => body,
+	summary: "A diagram of a system as named boxes, each tied to a path in the repo, and the arrows between them.",
+	body: "YAML with the keys below. Every box id must be unique, and every arrow must name two box ids. At least one box.",
+	bodySchema: diagramBody,
+	example: [
+		"```diagram",
+		"boxes:",
+		"  - id: cli",
+		"    label: CLI",
+		"    path: src/cli",
+		"  - id: format",
+		"    label: Format",
+		"    path: src/format",
+		"  - id: render",
+		"    label: Render",
+		"    path: src/render",
+		"arrows:",
+		"  - from: cli",
+		"    to: format",
+		"  - from: format",
+		"    to: render",
+		"    kind: loose",
+		"```",
+	].join("\n"),
+});
+
 const reviewChecklist = entry<"review-checklist">()({
 	props: z.strictObject({}),
 	parseBody(body, ctx) {
@@ -235,7 +343,7 @@ const reviewChecklist = entry<"review-checklist">()({
 	example: ["```review-checklist", "- Check the migration is reversible", "- Confirm **auth** still rejects expired tokens", "```"].join("\n"),
 });
 
-export const registry = { diff, callout, decision, "review-checklist": reviewChecklist } satisfies {
+export const registry = { diff, callout, decision, diagram, "review-checklist": reviewChecklist } satisfies {
 	[K in BlockKind]: BlockEntry<K, z.ZodObject, any>;
 };
 

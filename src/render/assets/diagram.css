@@ -1,0 +1,22 @@
+.diagram {
+	margin: 2rem 0;
+	padding: 1.25rem 1rem;
+	background: var(--card);
+	border: 1px solid var(--rule);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+}
+
+.diagram svg {
+	display: block;
+	margin: 0 auto;
+	--pele-bg: var(--card);
+	--pele-fg: var(--fg);
+	--pele-muted: var(--muted);
+	--pele-line: var(--muted);
+	--pele-surface: var(--surface);
+	--pele-surface-alt: var(--rule);
+	--pele-border: var(--faint);
+	--pele-accent: var(--voice);
+	--pele-radius: 6px;
+}

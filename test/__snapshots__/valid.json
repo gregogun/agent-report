@@ -368,6 +368,53 @@ on the next line with ",
       ],
     },
     {
+      "arrows": [
+        {
+          "from": "cli",
+          "kind": "direct",
+          "position": {
+            "column": 1,
+            "line": 53,
+          },
+          "to": "format",
+        },
+        {
+          "from": "format",
+          "kind": "loose",
+          "position": {
+            "column": 1,
+            "line": 55,
+          },
+          "to": "cli",
+        },
+      ],
+      "boxes": [
+        {
+          "id": "cli",
+          "label": "CLI",
+          "path": "src/cli",
+          "position": {
+            "column": 1,
+            "line": 46,
+          },
+        },
+        {
+          "id": "format",
+          "label": "Format",
+          "path": "src/format",
+          "position": {
+            "column": 1,
+            "line": 49,
+          },
+        },
+      ],
+      "position": {
+        "column": 1,
+        "line": 44,
+      },
+      "type": "diagram",
+    },
+    {
       "items": [
         [
           {
@@ -418,7 +465,7 @@ on the next line with ",
       ],
       "position": {
         "column": 1,
-        "line": 44,
+        "line": 60,
       },
       "type": "review-checklist",
     },

@@ -28,6 +28,12 @@ export type Annotation = {
 
 export type CalloutKind = "note" | "concept" | "edge-case" | "warning";
 
+export type DiagramBox = { id: string; label: string; path: string; position: Position };
+
+export type ArrowKind = "direct" | "loose";
+
+export type DiagramArrow = { from: string; to: string; kind: ArrowKind; position: Position };
+
 export type Block =
 	| { type: "prose"; body: Markdown; position: Position }
 	| {
@@ -47,6 +53,7 @@ export type Block =
 			alternatives: { option: string; reason: Markdown }[];
 			position: Position;
 	  }
+	| { type: "diagram"; boxes: DiagramBox[]; arrows: DiagramArrow[]; position: Position }
 	| { type: "review-checklist"; items: Markdown[]; position: Position };
 
 export type BlockType = Block["type"];

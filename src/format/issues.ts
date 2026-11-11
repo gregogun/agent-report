@@ -65,7 +65,6 @@ export function problemsFromZod(error: z.ZodError, input: unknown, schema: z.Zod
 		const parent = path.length ? ` ${pathLabel(path.slice(0, -1))}` : "";
 		const where = `${style.subject}${parent.trim() ? parent : ""}`;
 		const name = path.length ? String(path[path.length - 1]) : "";
-		const full = pathLabel(path);
 
 		if (issue.code === "unrecognized_keys") {
 			const scope = pathLabel(path);
@@ -101,7 +100,7 @@ export function problemsFromZod(error: z.ZodError, input: unknown, schema: z.Zod
 			const hint = (issue as { params?: { hint?: string } }).params?.hint;
 			problems.push({
 				path,
-				message: `${where} has invalid ${full || "value"}: ${issue.message}`,
+				message: `${where} has invalid ${name || "value"}: ${issue.message}`,
 				...(hint ? { hint } : {}),
 			});
 		}

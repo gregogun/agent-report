@@ -41,6 +41,22 @@ alternatives:
     reason: Needs a cleanup job.
 ```
 
+```diagram
+boxes:
+  - id: cli
+    label: CLI
+    path: src/cli
+  - id: format
+    label: Format
+    path: src/format
+arrows:
+  - from: cli
+    to: format
+  - from: format
+    to: cli
+    kind: loose
+```
+
 ```review-checklist
 - Check the migration is reversible
 - Confirm auth rejects expired tokens
