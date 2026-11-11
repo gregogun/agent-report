@@ -8,22 +8,39 @@ export type * from "./types.js";
 
 const slotName = (a: Pick<ResolvedAnnotation, "side" | "lineNumber">) => `annotation-${a.side}-${a.lineNumber}`;
 
-function annotationHtml(a: ResolvedAnnotation): string {
-	const range = a.lines.start === a.lines.end ? "" : `<span class="note-range">lines ${a.lines.start}–${a.lines.end}</span>`;
-	return `<aside class="note">${range}${renderToStaticMarkup(Md({ body: a.body }))}</aside>`;
+function annotationHtml(a: ResolvedAnnotation, n: number): string {
+	const { start, end } = a.lines;
+	const where = `${a.side === "deletions" ? "Removed line" : "Line"}${start === end ? "" : "s"} ${start === end ? start : `${start}\u2013${end}`}`;
+	return `<aside class="note"><p class="note-label"><span class="note-n">${n}</span>${where}</p>${renderToStaticMarkup(Md({ body: a.body }))}</aside>`;
 }
+
+function countChanges(patch: string): { added: number; removed: number } {
+	let added = 0;
+	let removed = 0;
+	for (const line of patch.split("\n")) {
+		if (line.startsWith("+") && !line.startsWith("+++")) added++;
+		else if (line.startsWith("-") && !line.startsWith("---")) removed++;
+	}
+	return { added, removed };
+}
+
+/*
+ * The library prepends a 16 KB icon sprite that only the file header references. With disableFileHeader nothing
+ * uses it, and a <use> cannot cross a shadow root anyway, so it is dropped unless a reference remains.
+ */
+const dropUnusedSprite = (html: string) => (html.includes("<use") ? html : html.replace(/^<svg data-icon-sprite[\s\S]*?<\/svg>/, ""));
 
 async function renderDiff(diff: ResolvedDiff): Promise<RenderedDiff> {
 	const { prerenderedHTML } = await preloadPatchDiff({
 		patch: diff.patch,
 		annotations: diff.annotations.map((a) => ({ side: a.side, lineNumber: a.lineNumber, metadata: undefined })),
-		options: { theme: { dark: "pierre-dark", light: "pierre-light" }, diffStyle: "unified" },
+		options: { theme: { dark: "pierre-dark", light: "pierre-light" }, diffStyle: "unified", disableFileHeader: true },
 	});
 	const slots = new Map<string, string[]>();
-	for (const a of diff.annotations) slots.set(slotName(a), [...(slots.get(slotName(a)) ?? []), annotationHtml(a)]);
+	diff.annotations.forEach((a, i) => slots.set(slotName(a), [...(slots.get(slotName(a)) ?? []), annotationHtml(a, i + 1)]));
 	const slotted = [...slots].map(([name, notes]) => `<div slot="${name}">${notes.join("")}</div>`).join("");
-	const html = `<diffs-container><template shadowrootmode="open">${prerenderedHTML}</template>${slotted}</diffs-container>`;
-	return { type: "diff", range: diff.range, path: diff.path, html, position: diff.position };
+	const html = `<diffs-container><template shadowrootmode="open">${dropUnusedSprite(prerenderedHTML)}</template>${slotted}</diffs-container>`;
+	return { type: "diff", range: diff.range, path: diff.path, html, ...countChanges(diff.patch), notes: diff.annotations.length, position: diff.position };
 }
 
 export async function renderReport(report: ResolvedReport): Promise<RenderedReport> {

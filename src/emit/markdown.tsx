@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import type { Markdown } from "../format/index.js";
 
 type Node = Markdown[number];
+
+export const HeadingIds = createContext<WeakMap<object, string>>(new WeakMap());
 
 const SAFE_URL = /^(?:https?:|mailto:|#|\/|\.\/|\.\.\/)/i;
 
@@ -16,13 +18,14 @@ function nodes(list: readonly Node[], headingShift: number): ReactNode[] {
 }
 
 function Mdast({ node, headingShift }: { node: Node; headingShift: number }): ReactNode {
+	const ids = useContext(HeadingIds);
 	const kids = () => ("children" in node ? nodes(node.children as Node[], headingShift) : null);
 	switch (node.type) {
 		case "paragraph":
 			return <p>{kids()}</p>;
 		case "heading": {
-			const Tag = `h${Math.min(node.depth + headingShift, 6)}` as "h2";
-			return <Tag>{kids()}</Tag>;
+			const Tag = `h${Math.min(Math.max(node.depth, headingShift + 1), 6)}` as "h2";
+			return <Tag id={ids.get(node)}>{kids()}</Tag>;
 		}
 		case "text":
 			return node.value;

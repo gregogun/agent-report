@@ -6,6 +6,9 @@ export type RenderedDiff = {
 	range: string;
 	path: string;
 	html: string;
+	added: number;
+	removed: number;
+	notes: number;
 	position: Position;
 };
 

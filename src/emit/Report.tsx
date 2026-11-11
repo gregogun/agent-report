@@ -1,18 +1,32 @@
 import type { ReactNode } from "react";
 import type { RenderedBlock, RenderedReport } from "../render/index.js";
-import { Md } from "./markdown.js";
+import { HeadingIds, Md } from "./markdown.js";
+import { headingIndex, type TocEntry } from "./toc.js";
 
 type Of<T extends RenderedBlock["type"]> = Extract<RenderedBlock, { type: T }>;
 
 function Diff({ block }: { block: Of<"diff"> }) {
+	const cut = block.path.lastIndexOf("/") + 1;
 	return (
-		<figure className="diff">
-			<figcaption>
-				<code>{block.path}</code>
-				<span className="range">{block.range}</span>
-			</figcaption>
-			<div dangerouslySetInnerHTML={{ __html: block.html }} />
-		</figure>
+		<details className="diff" open>
+			<summary>
+				<span className="diff-path">
+					<span className="diff-dir">{block.path.slice(0, cut)}</span>
+					<span className="diff-file">{block.path.slice(cut)}</span>
+				</span>
+				<span className="diff-meta">
+					<span className="diff-range">{block.range}</span>
+					<span className="diff-add">+{block.added}</span>
+					<span className="diff-del">&minus;{block.removed}</span>
+					{block.notes > 0 && (
+						<span className="diff-notes">
+							{block.notes} {block.notes === 1 ? "note" : "notes"}
+						</span>
+					)}
+				</span>
+			</summary>
+			<div className="diff-body" dangerouslySetInnerHTML={{ __html: block.html }} />
+		</details>
 	);
 }
 
@@ -89,7 +103,57 @@ function Block({ block }: { block: RenderedBlock }): ReactNode {
 	}
 }
 
+const tocScript = `(() => {
+	const nav = document.querySelector(".toc");
+	if (!nav) return;
+	const wide = matchMedia("(min-width: 68rem)");
+	nav.open = wide.matches;
+	wide.addEventListener("change", (e) => (nav.open = e.matches));
+	const links = [...nav.querySelectorAll("a")];
+	const heads = links.map((a) => document.getElementById(a.hash.slice(1)));
+	let queued = false;
+	const spy = () => {
+		queued = false;
+		let at = 0;
+		heads.forEach((h, i) => { if (h.getBoundingClientRect().top < innerHeight * 0.3) at = i; });
+		links.forEach((a, i) => (i === at ? a.setAttribute("aria-current", "location") : a.removeAttribute("aria-current")));
+	};
+	addEventListener("scroll", () => queued || (queued = true, requestAnimationFrame(spy)), { passive: true });
+	spy();
+})();`;
+
+function Contents({ entries }: { entries: TocEntry[] }) {
+	if (entries.length < 2) return null;
+	return (
+		<nav aria-label="Contents">
+			<details className="toc" open>
+				<summary>Contents</summary>
+				<ol>
+					{entries.map((e) => (
+						<li key={e.id} className={`toc-${e.level}`}>
+							<a href={`#${e.id}`}>{e.text}</a>
+						</li>
+					))}
+				</ol>
+			</details>
+		</nav>
+	);
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+function Meta({ blocks }: { blocks: RenderedBlock[] }) {
+	const diffs = blocks.filter((b): b is Of<"diff"> => b.type === "diff");
+	const facts = [
+		diffs.length && plural(diffs.length, "diff"),
+		diffs.reduce((n, d) => n + d.notes, 0) && plural(diffs.reduce((n, d) => n + d.notes, 0), "note"),
+		blocks.some((b) => b.type === "decision") && plural(blocks.filter((b) => b.type === "decision").length, "decision"),
+	].filter(Boolean);
+	return facts.length ? <p className="meta">{facts.join(" \u00b7 ")}</p> : null;
+}
+
 export function Document({ report, css }: { report: RenderedReport; css: string }) {
+	const { entries, ids } = headingIndex(report.blocks);
 	return (
 		<html lang="en">
 			<head>
@@ -100,12 +164,22 @@ export function Document({ report, css }: { report: RenderedReport; css: string 
 				<style dangerouslySetInnerHTML={{ __html: css }} />
 			</head>
 			<body>
-				<main>
-					<h1>{report.title}</h1>
-					{report.blocks.map((block, i) => (
-						<Block key={i} block={block} />
-					))}
-				</main>
+				<div className="page">
+					<header className="masthead">
+						<p className="eyebrow">Report</p>
+						<h1>{report.title}</h1>
+						<Meta blocks={report.blocks} />
+					</header>
+					<Contents entries={entries} />
+					<HeadingIds value={ids}>
+						<main>
+							{report.blocks.map((block, i) => (
+								<Block key={i} block={block} />
+							))}
+						</main>
+					</HeadingIds>
+				</div>
+				<script dangerouslySetInnerHTML={{ __html: tocScript }} />
 			</body>
 		</html>
 	);
