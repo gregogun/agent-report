@@ -47,7 +47,7 @@ export const ANCHORS: { form: string; meaning: string }[] = [
 	{ form: '@old:"quoted code"', meaning: "the one old-side line containing that text" },
 ];
 
-const ANCHOR_FORMS = ANCHORS.map((a) => a.form).join(", ");
+const ANCHOR_FORMS = ANCHORS.map((a) => (a.form === '@"quoted code"' ? `${a.form} (side defaults to new)` : a.form)).join(", ");
 
 const LINES = /^(old|new):(\d+)(?:-(\d+))?/;
 const TEXT = /^(?:(old|new):)?"((?:[^"\\]|\\.)*)"/;

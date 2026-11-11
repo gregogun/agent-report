@@ -17,7 +17,7 @@ export const frontmatter = z.object({
 			params: { hint: "set version: 1, the only format version this build reads" },
 		})
 		.describe("format version, must be 1"),
-	title: z.string().min(1).describe("report title, shown as the page heading"),
+	title: z.string().min(1).describe("report title"),
 });
 
 const isBlockKind = (lang: string | null | undefined): lang is BlockKind => !!lang && Object.hasOwn(registry, lang);
