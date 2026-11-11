@@ -92,7 +92,7 @@ export function formatReference(): string {
 			.map((k) => `\`${k}\``)
 			.join(", ")}.`,
 		"",
-		"A block is a fenced code block. The fence language is the block name, the props follow it on the same line, and the body is between the fences.",
+		"A block is a fenced code block at the top level of the report, not inside a list or quote. The fence language is the block name, the props follow it on the same line, and the body is between the fences.",
 		"",
 		...Object.keys(registry).flatMap((k) => blockSection(k as keyof typeof registry)),
 		"## Diff annotation anchors",

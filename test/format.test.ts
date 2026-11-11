@@ -153,6 +153,13 @@ describe("diagnostics", () => {
 		expect(found.map((d) => d.line)).toEqual([2, 5, 6, 9, 10, 13]);
 	});
 
+	it("rejects a block fence nested in a list or quote", () => {
+		expect(errors(doc("- item\n\n  ```diff range=a..b path=x\n  @new:1 hi\n  ```\n\n> ```callout kind=note\n> hi\n> ```"))).toEqual([
+			{ line: 8, message: "diff block is inside a list", hint: "move the fence to the top level of the report, unindented, with a blank line before it" },
+			{ line: 12, message: "callout block is inside a quote", hint: "move the fence to the top level of the report, unindented, with a blank line before it" },
+		]);
+	});
+
 	it("leaves other fence languages as prose", () => {
 		const result = parseReport(doc("```ts\nconst a = 1;\n```"));
 		expect(result.ok && result.value.blocks.map((b) => b.type)).toEqual(["prose"]);

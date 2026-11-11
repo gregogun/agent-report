@@ -73,6 +73,20 @@ function parseFence(node: Code, kind: BlockKind, diagnostics: Diagnostic[]): Blo
 	return { type: kind, ...entry.assemble(props.data, body.value), position: fence } as Block;
 }
 
+function nestedBlocks(node: RootContent, diagnostics: Diagnostic[]) {
+	if (!("children" in node)) return;
+	for (const child of node.children as RootContent[]) {
+		if (child.type === "code" && isBlockKind(child.lang)) {
+			diagnostics.push({
+				position: { line: child.position?.start.line ?? 1, column: child.position?.start.column ?? 1 },
+				message: `${child.lang} block is inside a ${node.type === "blockquote" ? "quote" : "list"}`,
+				hint: "move the fence to the top level of the report, unindented, with a blank line before it",
+			});
+		}
+		nestedBlocks(child, diagnostics);
+	}
+}
+
 export function parseReport(source: string): Result<Report> {
 	const tree = parseReportTree(source);
 	const diagnostics: Diagnostic[] = [];
@@ -93,6 +107,7 @@ export function parseReport(source: string): Result<Report> {
 			const block = parseFence(node, node.lang, diagnostics);
 			if (block) blocks.push(block);
 		} else {
+			nestedBlocks(node, diagnostics);
 			prose.push(node);
 		}
 	}
