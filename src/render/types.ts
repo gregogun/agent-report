@@ -15,6 +15,7 @@ export type RenderedDiff = {
 export type RenderedDiagram = {
 	type: "diagram";
 	svg: string;
+	narrowSvg: string;
 	position: Position;
 };
 

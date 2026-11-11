@@ -26,7 +26,7 @@ it("draws a label that holds a backtick, quotes, angle brackets and a hash as li
 it("draws loose arrows dashed and direct arrows solid", async () => {
 	const source = withDiagram("A").replace("    to: b\n", "    to: b\n  - from: b\n    to: a\n    kind: loose\n");
 	const edges = [...(await build(source)).matchAll(/<g class="pele-edge"[^>]*><path d="[^"]*"([^>]*)\/>/g)].map((m) => (m[1] as string).includes("stroke-dasharray"));
-	expect(edges).toEqual([false, true]);
+	expect(edges).toEqual([false, true, false, true]);
 });
 
 it("inlines the diagram font only in a report that has a diagram", async () => {

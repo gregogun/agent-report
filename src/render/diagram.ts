@@ -43,7 +43,12 @@ export function diagramMermaid({ boxes, arrows }: Pick<DiagramInput, "boxes" | "
 	].join("\n");
 }
 
+export const NARROW_WIDTH = 300;
+
 export function renderDiagram(diagram: DiagramInput, index: number, headings: HeadingIndex): RenderedDiagram {
-	const { svg } = render(diagramMermaid(diagram, headings), { measurer, fontFamily: `${DIAGRAM_FONT}, sans-serif`, idPrefix: `d${index}` });
-	return { type: "diagram", svg, position: diagram.position };
+	const source = diagramMermaid(diagram, headings);
+	const options = { measurer, fontFamily: `${DIAGRAM_FONT}, sans-serif` };
+	const { svg } = render(source, { ...options, idPrefix: `d${index}w` });
+	const { svg: narrowSvg } = render(source, { ...options, idPrefix: `d${index}n`, maxWidth: NARROW_WIDTH });
+	return { type: "diagram", svg, narrowSvg, position: diagram.position };
 }

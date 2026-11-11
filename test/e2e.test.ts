@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Browser, chromium } from "playwright";
+import { type Browser, chromium, type Page } from "playwright";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 const root = join(import.meta.dirname, "..");
@@ -116,13 +116,13 @@ it("draws every box and arrow of a diagram in both colour schemes, with no label
 	await page.evaluate(() => document.fonts.ready);
 	expect(await page.evaluate(() => document.fonts.check("16px ARDiagram"))).toBe(true);
 
-	const nodes = page.locator(".diagram .pele-node");
+	const nodes = page.locator(".diagram-wide .pele-node");
 	expect(await nodes.locator("text tspan:first-child").allTextContents()).toEqual(["CLI", "Format", "Resolve", "Render", "Emit"]);
 	expect(await nodes.locator("text tspan:nth-child(2)").allTextContents()).toEqual(["src/cli", "src/format", "src/resolve", "src/render", "src/emit"]);
-	expect(await page.locator(".diagram .pele-edge").count()).toBe(5);
+	expect(await page.locator(".diagram-wide .pele-edge").count()).toBe(5);
 
 	const overflow = await page.evaluate(() =>
-		[...document.querySelectorAll<SVGGElement>(".diagram .pele-node")].flatMap((node) => {
+		[...document.querySelectorAll<SVGGElement>(".diagram-wide .pele-node")].flatMap((node) => {
 			const rect = node.querySelector("rect") as SVGRectElement;
 			const box = rect.width.baseVal.value;
 			return [...node.querySelectorAll("tspan")].flatMap((line) => {
@@ -136,7 +136,7 @@ it("draws every box and arrow of a diagram in both colour schemes, with no label
 	const fills: string[] = [];
 	for (const scheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme: scheme });
-		const box = await page.locator(".diagram .pele-node rect").first().evaluate((el) => {
+		const box = await page.locator(".diagram-wide .pele-node rect").first().evaluate((el) => {
 			const r = el.getBoundingClientRect();
 			return { visible: r.width > 0 && r.height > 0, fill: getComputedStyle(el).fill };
 		});
@@ -152,10 +152,10 @@ it("draws every box and arrow of a diagram in both colour schemes, with no label
 it("jumps to the heading when a linked box is clicked, and lets the keyboard reach and follow the link", async () => {
 	const page = await browser.newPage({ viewport: { width: 1280, height: 500 } });
 	await page.goto(`file://${join(dir, "pipeline.html")}`);
-	expect(await page.locator(".diagram a").count()).toBe(2);
-	expect(await page.locator(".diagram .pele-node:not(.clickable)").count()).toBe(3);
+	expect(await page.locator(".diagram-wide a").count()).toBe(2);
+	expect(await page.locator(".diagram-wide .pele-node:not(.clickable)").count()).toBe(3);
 
-	await page.locator(".diagram .pele-node", { hasText: "Format" }).click();
+	await page.locator(".diagram-wide .pele-node", { hasText: "Format" }).click();
 	expect(await page.evaluate(() => location.hash)).toBe("#format-owns-the-grammar");
 	const heading = page.locator("#format-owns-the-grammar");
 	expect(await heading.textContent()).toBe("Format owns the grammar");
@@ -169,6 +169,65 @@ it("jumps to the heading when a linked box is clicked, and lets the keyboard rea
 		if (href) reached.push(href);
 	}
 	expect(reached).toEqual(["#format-owns-the-grammar", "#resolve-checks-the-repo"]);
+	await page.keyboard.press("Enter");
+	expect(await page.evaluate(() => location.hash)).toBe("#resolve-checks-the-repo");
+	await page.close();
+}, 30_000);
+
+const visibleLayouts = (page: Page) =>
+	page.evaluate(() => ({
+		wide: getComputedStyle(document.querySelector(".diagram-wide")!).display !== "none",
+		narrow: getComputedStyle(document.querySelector(".diagram-narrow")!).display !== "none",
+	}));
+
+it("shows the wide diagram at 1200px and the narrow one at 375px, never both", async () => {
+	const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	await page.evaluate(() => document.fonts.ready);
+	expect(await visibleLayouts(page)).toEqual({ wide: true, narrow: false });
+	expect(await page.locator(".diagram-wide svg").isVisible()).toBe(true);
+	expect(await page.locator(".diagram-narrow svg").isVisible()).toBe(false);
+
+	await page.setViewportSize({ width: 375, height: 800 });
+	expect(await visibleLayouts(page)).toEqual({ wide: false, narrow: true });
+	expect(await page.locator(".diagram-narrow svg").isVisible()).toBe(true);
+	expect(await page.locator(".diagram-wide svg").isVisible()).toBe(false);
+
+	const overflow = await page.evaluate(() =>
+		[...document.querySelectorAll<SVGGElement>(".diagram-narrow .pele-node")].flatMap((node) => {
+			const box = (node.querySelector("rect") as SVGRectElement).width.baseVal.value;
+			return [...node.querySelectorAll("tspan")].flatMap((line) => {
+				const width = line.getComputedTextLength();
+				return width > box ? [`${line.textContent}: line ${width} wider than box ${box}`] : [];
+			});
+		}),
+	);
+	expect(overflow).toEqual([]);
+	expect(await page.locator(".diagram-narrow .pele-node").count()).toBe(5);
+	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+	const ids = await page.evaluate(() => [...document.querySelectorAll("[id]")].map((el) => el.id));
+	expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
+	await page.close();
+}, 30_000);
+
+it("follows a diagram link by click and by keyboard in the narrow layout, reaching only the visible copy", async () => {
+	const page = await browser.newPage({ viewport: { width: 375, height: 700 } });
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	await page.locator(".diagram-narrow .pele-node", { hasText: "Format" }).click();
+	expect(await page.evaluate(() => location.hash)).toBe("#format-owns-the-grammar");
+
+	await page.goto(`file://${join(dir, "pipeline.html")}`);
+	const reached: string[] = [];
+	for (let i = 0; i < 40 && reached.length < 2; i++) {
+		await page.keyboard.press("Tab");
+		const focus = await page.evaluate(() => {
+			const el = document.activeElement;
+			return el?.closest(".diagram") ? { href: el.getAttribute("href"), narrow: !!el.closest(".diagram-narrow") } : null;
+		});
+		if (focus) reached.push(`${focus.href} ${focus.narrow ? "narrow" : "wide"}`);
+	}
+	expect(reached).toEqual(["#format-owns-the-grammar narrow", "#resolve-checks-the-repo narrow"]);
 	await page.keyboard.press("Enter");
 	expect(await page.evaluate(() => location.hash)).toBe("#resolve-checks-the-repo");
 	await page.close();

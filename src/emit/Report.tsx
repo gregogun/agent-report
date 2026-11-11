@@ -67,7 +67,12 @@ function Decision({ block }: { block: Of<"decision"> }) {
 }
 
 function Diagram({ block }: { block: Of<"diagram"> }) {
-	return <figure className="diagram" dangerouslySetInnerHTML={{ __html: block.svg }} />;
+	return (
+		<figure className="diagram">
+			<div className="diagram-wide" dangerouslySetInnerHTML={{ __html: block.svg }} />
+			<div className="diagram-narrow" dangerouslySetInnerHTML={{ __html: block.narrowSvg }} />
+		</figure>
+	);
 }
 
 function Checklist({ block }: { block: Of<"review-checklist"> }) {

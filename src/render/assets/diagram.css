@@ -7,6 +7,19 @@
 	box-shadow: var(--shadow);
 }
 
+.diagram-narrow {
+	display: none;
+}
+
+@media (max-width: 40rem) {
+	.diagram-wide {
+		display: none;
+	}
+	.diagram-narrow {
+		display: block;
+	}
+}
+
 .diagram svg {
 	display: block;
 	margin: 0 auto;
