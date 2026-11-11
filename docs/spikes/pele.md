@@ -59,3 +59,22 @@ Costs and constraints for the real build:
 - Style per-node colour through classes and page CSS, never `classDef` colours.
 
 The riskiest open item is label clipping. Pele sizes boxes from its built-in metrics, not from the reader's font. [M] With the page font stack set to `ui-monospace, Menlo, monospace`, two nodes (`pierre`, `ref`) overflowed their boxes. Serif (Georgia) and Impact did not. The sample used labels up to 22 characters. The stack in `styles.css` puts `--font-ui` on `ui-sans-serif, system-ui`, and Linux and Windows fallbacks were not tested [G]. Pele exposes `fontFamily`, `fontFamilyMono`, `monospace`, and a custom `measurer` option, so a build-time fix probably exists. It was not tried. A second risk is project age, since Pele is five weeks old and moves quickly (1.13.0 already).
+
+## Addendum: the font-measurement fix
+Files: `font.mjs` (subsets the fonts), `build-font.mjs` (renders with a measurer and builds `report-font.html`), `check-font.mjs` (compares widths in Chromium), `table.mjs` (builds the width table), `stress.mmd` (7 nodes with long paths, wide and narrow letters, and punctuation). All in `spikes/pele/`.
+
+The cause of the clipping is that the reader's font is unknown at build time. `--font-ui` resolves to a different font on each operating system, so no measurer can match it. The fix is to pin the diagram font and measure that exact font.
+
+[M] **Baseline with Pele's built-in metrics.** Across the architecture and stress diagrams (18 nodes), system-ui and Georgia had no overflow, with the widest label at 92% and 95% of its box. Verdana overflowed 3 of 18 boxes, and its widest label was 105% of its box. [I] DejaVu Sans, a common Linux default, comes from the same Bitstream Vera design and has similar widths to Verdana, so Linux readers would probably see the same overflow. DejaVu itself was not tested.
+
+[M] **The embedded font.** Inter's Latin variable woff2 (48,256 bytes), subset to printable ASCII plus six typographic characters, with the weight axis kept from 400 to 700, is 20,864 bytes. As base64 in the page it is 27,820 bytes raw and about 21 KB gzipped. Base64 of woff2 barely compresses.
+
+[M] **The measurer.** `measurer: { width(text, size, style) }` returns the advance width from the same font, read with fontkit, including kerning. In Chromium, `getComputedTextLength()` of each of 33 label lines differed from the predicted width by at most 0.185 px. No label overflowed. The page made no network requests, had no scripts, and the font showed `loaded`. The font stack was `ARDiagram, "DejaVu Sans", monospace`, so the result doesn't depend on which fallback fonts are installed. Labels that are too long wrap inside the box (screenshot `report-font.png`).
+
+[M] **A width table replaces fontkit at runtime.** fontkit is 5.6 MB on disk and cannot make weight variations from a woff2 file, so it needs a TTF copy of the subset (56,560 bytes). A table of advance widths for 95 characters plus 2,467 non-zero kerning pairs is 52,850 bytes of JSON (8,567 gzipped). It matched fontkit to 0 px on every label and Chromium to 0.185 px. A dev-time script generates the table from the same subset that gets embedded. The published package then ships the woff2 and the table, and no font library.
+
+[M] **Weights and mono are unused by flowcharts.** All 79 measurer calls used style 0 (regular, not mono). `**bold**` in a plain quoted label renders literally. The mono font never loaded, so embed only the sans subset (saves 23,360 bytes). If a later diagram type uses bold or mono, add its widths to the table then.
+
+[M] **Syntax errors carry positions.** A backtick inside a quoted label throws a `PeleError` with `line`, `column`, and a caret snippet, so the build can turn it into a report-line diagnostic.
+
+**Verdict for the fix.** Pin the diagram font to an embedded Inter subset and measure it with a generated width table. The cost is about 21 KB gzipped per report that has a diagram, paid once, not per diagram. The 1.6 KB diagram itself is negligible next to it. Using a system font stack with padding was rejected, since overflow then depends on the reader's operating system.
