@@ -21,4 +21,4 @@ Fixed after reading the error.
 MD
   agent-report build "$report" >&2
 fi
-echo '{"type":"result","duration_ms":1500,"total_cost_usd":0.0123,"usage":{"input_tokens":10,"output_tokens":20}}'
+echo '{"type":"result","duration_ms":1500,"total_cost_usd":0.0123,"usage":{"input_tokens":4,"cache_creation_input_tokens":2,"cache_read_input_tokens":4,"output_tokens":20}}'

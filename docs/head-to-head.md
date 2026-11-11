@@ -23,7 +23,7 @@ Per case, in `<run>/<case>/explain-diff-html/` and `<run>/<case>/agent-report/`:
 | `retries` | builds after the first one |
 | `final_ok` | `y` when the last build succeeded and produced HTML (HTML arm: the file exists) |
 | `build_attempts` | total `build` calls |
-| `duration_s`, `cost_usd`, `tokens_in+out` | from the `claude -p` JSON, `?` when absent |
+| `duration_s`, `cost_usd`, `tokens_in+out` | from the `claude -p` JSON, `?` when absent. Input counts cache reads and writes too |
 
 ## Judge the pairs
 

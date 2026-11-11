@@ -71,7 +71,8 @@ summarize() { # case arm dir final_ok_file
     const secs = j.duration_ms != null ? (j.duration_ms / 1000).toFixed(1) : read("wall_seconds").trim() || "?";
     const cost = j.total_cost_usd != null ? j.total_cost_usd.toFixed(4) : "?";
     const u = j.usage || {};
-    const tok = (u.input_tokens ?? "?") + "+" + (u.output_tokens ?? "?");
+    const input = u.input_tokens == null ? "?" : u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+    const tok = input + "+" + (u.output_tokens ?? "?");
     console.log([name, arm, first, retries, ok, builds.length || "-", secs, cost, tok].join("\t"));
   ' "$@"
 }
