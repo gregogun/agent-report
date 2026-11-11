@@ -38,6 +38,11 @@ Every report uses the same layout, so a reader learns it once. The design work g
 16. As a developer, I want diffs rendered with syntax highlighting and annotations shown beside the changed lines, so that I understand a change without switching to my editor.
 17. As a developer, I want the report to work on a phone and in dark mode, so that I can read it away from my desk.
 18. As a developer, I want the report Markdown to stay readable without the tool, so that it still makes sense in a terminal or on GitHub.
+19. As an agent, I want a `diagram` block that describes a codebase's architecture as named boxes and the arrows between them, so that a reader sees the whole system before the details.
+20. As an agent, I want to tie each box to a real path in the repo, and have the build fail with the report line when a path does not exist, so that a diagram cannot describe code that isn't there.
+21. As an agent, I want to link a box to a section of the same report, so that the reader can go from the overview to the explanation.
+22. As a developer, I want diagram labels to fit their boxes on any operating system, so that a diagram never looks broken.
+23. As a developer, I want a diagram to read on a phone, so that the overview works away from my desk.
 
 ## Implementation decisions
 
@@ -75,6 +80,14 @@ Parse and validate do no I/O. All I/O lives in resolve and in the CLI.
 
 **No raw HTML.** Version 1 has no escape hatch for raw HTML. Add a sandboxed one only if real reports keep needing free-form diagrams.
 
+**Diagrams.** A `diagram` block draws an architecture or system diagram with Pele, which turns Mermaid text into SVG in plain Node. `docs/spikes/pele.md` holds the evidence for each decision below.
+
+- The agent writes typed data, not Mermaid. The body is YAML with a list of boxes and a list of arrows, like the `decision` block. Each box has an id, a label, and a path. A box may also link to a heading in the same report. Each arrow names two box ids and says whether it is a direct call or a looser dependency, drawn solid or dashed. Mermaid text from the agent would carry only labels, so the build could not check it.
+- Resolve checks every path against the repo at the block's git ref, which defaults to the working tree. A file or a directory is valid. An unknown path, a duplicate box id, an arrow to an unknown box, and a link to a heading that doesn't exist each fail the build at the report line of the offending entry.
+- Render turns the typed data into Mermaid and calls Pele twice: once at full width and once narrow for phones. The page swaps the two with a media query. Pele syntax errors carry a line and column. The build maps them to the report line, but well-formed data should never produce one.
+- Pele sizes boxes from text widths at build time, but the reader's system font is unknown then, so labels can overflow. Diagram labels therefore use one embedded font, a subset of Inter: printable ASCII and a few typographic characters, about 21 KB gzipped. Pele's measurer reads widths from a table that a dev-time script generates from the same subset, so the published package ships no font library. The font is inlined only in reports that contain a diagram. It uses the one-font allowance in **Styling**, and prose keeps the system font stack.
+- The SVG is plain inline markup. The emit stage injects it like the diff HTML, and the viewer treats it as opaque. Colours come from Pele's `--pele-*` variables, mapped to the report's tokens, so dark mode works without a second render. Per-box colour, when it is added, uses classes and page CSS, never Mermaid colour styles, because Pele inlines those as literal colours that ignore dark mode.
+
 **Skills are examples.** The repo may ship optional example skills, such as one for explaining a diff, but they are not part of the product. The format reference command is how any agent or skill learns the format.
 
 **Build order and validation.** Build in this order, and stop at each check:
@@ -91,6 +104,8 @@ Stop if, after step 3, explain-diff is still the better choice for most diffs. I
 - Whether one copy of the `@pierre/diffs` CSS and icon sprite can serve every diff block. Each block carries about 48 KB of fixed overhead otherwise.
 - The exact text of the annotation anchor syntax inside a `diff` block body. The head-to-head retry count decides between candidate spellings.
 - The name of the command that prints the format reference.
+- The exact field names of the `diagram` body, and whether boxes also take shapes such as a cylinder for a store. Retry counts from real reports decide.
+- The breakpoint and narrow width for the phone render of a diagram.
 
 ## Testing
 
@@ -102,13 +117,18 @@ Three seams cover the critical paths. Everything else, including the viewer's lo
 
 The project has no existing tests, so there is no prior art.
 
+Diagrams extend the same three seams. A pipeline golden test checks resolved box paths against the throwaway repo. Error-message tests cover an unknown path, a duplicate box id, an arrow to an unknown box, and a link to a missing heading. The end-to-end test opens a report with a diagram, asserts that every box draws and that no label is wider than its box, and keeps the zero-network assertion. The overflow check also catches a Pele update that changes how it pads labels.
+
 ## Out of scope
 
 - `serve` with live reload, until the validation phase ends.
-- Pele diagrams, quizzes, and directive-based containers, until the first block set proves itself.
+- Quizzes and directive-based containers, until the first block set proves itself.
+- The loop where a reader's questions about a diagram send an agent through the commit history. That loop belongs to skills, and the user is building it separately.
+- Anchoring diagram boxes to symbols inside a file. Boxes anchor to paths only.
+- Checking that a diagram's arrows match real imports. Arrows are the agent's claim.
 - Plugins, a theming API, and config files.
 - A public library API for the parser.
 - A raw HTML escape hatch in version 1.
 - First-class skills. Example skills are optional.
-- Report types other than diff explanations, until diff explanations work well.
+- Report types other than diff explanations and architecture overviews, until those work well.
 - A GitHub repository and CI, until the user sets them up.
