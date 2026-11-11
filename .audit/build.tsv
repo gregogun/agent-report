@@ -1,3 +1,6 @@
 ts	phase	decision	why	evidence	result
 2026-11-11T00:23:11Z	frame	split the spec into 8 tickets, spike on @pierre/diffs first	how it renders in Node decides the render stage, so it is the riskiest unknown	docs/plan.md	open
 2026-11-11T00:23:11Z	frame	set up a local git repo with no remote	no GitHub repo yet; commits give each ticket a reviewable diff	.git	done
+2026-11-11T00:25:56Z	spike	'@pierre/diffs pre-renders in Node via preloadPatchDiff, with annotations as slot children	had to know before designing the render stage	docs/spikes/pierre-diffs.md; checked report.html: 63249 bytes, 0 scripts, 2 annotation slots; read screenshot	VERIFIED
+2026-11-11T00:25:56Z	spike	client-side React diff costs about 1.5 MB raw against 63 KB pre-rendered, so ship no diff JS	the subagent measured both with esbuild	docs/spikes/pierre-diffs.md	measured by subagent, not re-run
+2026-11-11T00:25:56Z	checkpoint	proposed rendering the whole report to static HTML in Node instead of a client-rendered Vite template	declarative shadow DOM only applies when parsed as initial HTML, so client React injection fights the diff output	docs/spikes/pierre-diffs.md	open, needs user call
