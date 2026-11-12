@@ -205,12 +205,15 @@ const decision = entry<"decision">()({
 	},
 	assemble: (props, body) => ({ title: props.title, ...body }),
 	summary: "A design decision: what was chosen, why, and the alternatives rejected.",
-	body: "YAML with the keys below. chosen, why and each alternative's reason are markdown.",
+	body: "YAML with the keys below. chosen, why and each alternative's reason are markdown. For markdown longer than one line, or text with a colon followed by a space, write `key: |` and indent the text on the lines below.",
 	bodySchema: decisionBody,
 	example: [
 		'```decision title="Where to store sessions"',
 		"chosen: Redis",
-		"why: Sessions expire, and Redis expires keys natively.",
+		"why: |",
+		"  Sessions expire, and Redis expires keys natively.",
+		"",
+		"  Every app server already has a Redis client: `lib/cache.ts`.",
 		"alternatives:",
 		"  - option: Postgres",
 		"    reason: Needs a cleanup job for expired rows.",
@@ -241,7 +244,7 @@ const diagramBody = z.strictObject({
 				section: z
 					.string()
 					.refine((v) => /\S/.test(v), { error: "must not be blank", params: { hint: "write the text of a heading in this report, like How it works, or leave section out" } })
-					.describe("text of a heading in this report. Clicking the box jumps to it. Omit for a box with no link")
+					.describe("text of a #, ##, or ### heading in this report, matched ignoring case and extra spaces. Clicking the box jumps to it. Several boxes may link to one heading. Omit for a box with no link")
 					.optional(),
 			}),
 		)

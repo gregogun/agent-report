@@ -68,6 +68,8 @@ arrows:
     to: measure
   - from: emit
     to: diagram
+  - from: emit
+    to: format
 ```
 
 Solid arrows are imports that run at build time. Dashed arrows are imports of types only, which disappear when the code compiles.

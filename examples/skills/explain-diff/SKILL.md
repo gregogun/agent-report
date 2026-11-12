@@ -15,7 +15,7 @@ Run `npx agent-report reference` (or `agent-report reference` when it is on your
 
 Explore the code around the change first, not only the diff. Then cover these in order, as prose with blocks:
 
-1. **Background.** The existing system the change touches. Open with a short paragraph a newcomer can follow, then the narrow part this change builds on.
+1. **Background.** The existing system the change touches. Open with a short paragraph a newcomer can follow, then the narrow part this change builds on. When the change spans several modules, add a `diagram` block of them, and link each box to the section that covers it.
 2. **Intuition.** The essence of the change in a few sentences, with a toy example. Put the idea before the mechanics.
 3. **Walkthrough.** Group the changes in the order a reader should understand them, not file order. Show each group with a `diff` block, and annotate the real lines that matter. An annotation says why, not what.
 4. **Decisions.** A `decision` block for each real choice, with the alternatives the author rejected or could have taken.
