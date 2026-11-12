@@ -67,9 +67,13 @@ describe("diagnostics", () => {
 		]);
 	});
 
-	it("rejects bad hunks", () => {
-		expect(errors(doc("```diff range=a..b path=x hunks=0\n```"))).toEqual([
-			{ line: 6, message: "diff block has invalid hunks: must be N or N-M with 1-based hunk numbers, like 2 or 2-3", hint: undefined },
+	it.each(["0", "1,3"])("rejects hunks=%s with one error", (hunks) => {
+		expect(errors(doc(`\`\`\`diff range=a..b path=x hunks=${hunks}\n\`\`\``))).toEqual([
+			{
+				line: 6,
+				message: "diff block has invalid hunks: must be N or N-M with 1-based hunk numbers, like 2 or 2-3. For hunks that are not next to each other, write one diff block per range",
+				hint: undefined,
+			},
 		]);
 	});
 

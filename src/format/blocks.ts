@@ -83,7 +83,7 @@ const diff = entry<"diff">()({
 		path: z.string().min(1).describe("file path relative to the repo root"),
 		hunks: z
 			.string()
-			.regex(/^[1-9]\d*(-[1-9]\d*)?$/, "must be N or N-M with 1-based hunk numbers, like 2 or 2-3")
+			.regex(/^[1-9]\d*(-[1-9]\d*)?$/, { error: "must be N or N-M with 1-based hunk numbers, like 2 or 2-3. For hunks that are not next to each other, write one diff block per range", abort: true })
 			.refine((v) => rangeOf(v).start <= rangeOf(v).end, "range ends before it starts")
 			.transform(rangeOf)
 			.describe("which hunks of the file to show, 1-based: N or N-M. Omit for all hunks")
