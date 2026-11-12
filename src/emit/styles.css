@@ -30,8 +30,7 @@
 	--step-2: 1.75rem;
 	--step-3: 2.75rem;
 
-	--measure: 38rem;
-	--column: 52rem;
+	--column: 46rem;
 	--radius: 10px;
 	--shadow: 0 1px 2px light-dark(rgb(40 30 10 / 0.06), rgb(0 0 0 / 0.4)), 0 6px 18px -8px light-dark(rgb(40 30 10 / 0.14), rgb(0 0 0 / 0.5));
 }
@@ -188,10 +187,6 @@ h1 {
 
 main > * {
 	margin-block: 0 1.75rem;
-}
-
-.prose > * {
-	max-width: var(--measure);
 }
 
 p, ul, ol, blockquote, table, pre {
@@ -528,7 +523,6 @@ diffs-container {
 	border-left: 3px solid var(--voice);
 	border-radius: 2px 8px 8px 2px;
 	background: var(--voice-tint);
-	max-width: 44rem;
 }
 
 .note::before {

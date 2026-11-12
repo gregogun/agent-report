@@ -34,6 +34,10 @@
 	--pele-radius: 6px;
 }
 
+.diagram .pele-label tspan {
+	fill: var(--pele-fg);
+}
+
 .diagram .pele-label tspan:nth-child(2) {
 	font-size: 0.78em;
 	fill: var(--pele-muted);

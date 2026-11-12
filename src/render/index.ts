@@ -36,7 +36,7 @@ async function renderDiff(diff: ResolvedDiff): Promise<RenderedDiff> {
 	const { prerenderedHTML } = await preloadPatchDiff({
 		patch: diff.patch,
 		annotations: diff.annotations.map((a) => ({ side: a.side, lineNumber: a.lineNumber, metadata: undefined })),
-		options: { theme: { dark: "pierre-dark", light: "pierre-light" }, diffStyle: "unified", disableFileHeader: true },
+		options: { theme: { dark: "pierre-dark", light: "pierre-light" }, diffStyle: "unified", overflow: "wrap", disableFileHeader: true },
 	});
 	const slots = new Map<string, string[]>();
 	diff.annotations.forEach((a, i) => slots.set(slotName(a), [...(slots.get(slotName(a)) ?? []), annotationHtml(a, i + 1)]));
